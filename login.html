@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Portal - Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #1A1A1A;
+            color: #E0E0E0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 2rem;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .logo-container svg {
+            width: 160px;
+            height: auto;
+        }
+
+        .login-card {
+            background: #2A2A2A;
+            border-radius: 12px;
+            padding: 2.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+            color: #FFFFFF;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #999;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #CCC;
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            font-size: 1rem;
+            border: 1px solid #3A3A3A;
+            border-radius: 6px;
+            background: #1A1A1A;
+            color: #E0E0E0;
+            transition: border-color 0.2s;
+        }
+
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #E60A00;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 0.875rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #FFFFFF;
+            background: #E60A00;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #C00900;
+        }
+
+        .btn-primary:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: rgba(230, 10, 0, 0.15);
+            border-left: 3px solid #E60A00;
+            padding: 0.875rem;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 1rem;
+            color: #999;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-container">
+            <svg viewBox="0 0 315.39 179.63" xmlns="http://www.w3.org/2000/svg">
+                <path d="M60.12,0V76.43H0V0H60.12ZM30.06,135.95c16.61,0,30.06,13.45,30.06,30.06s-13.45,30.06-30.06,30.06S0,182.62,0,166.01s13.45-30.06,30.06-30.06Z" fill="#0a0909" stroke="#0a0909" stroke-width="2"/>
+                <path d="M60.12,103.2V76.43H0v26.77H60.12Z" fill="#e60a00"/>
+                <path d="M104.5,0V179.63h47.64V0h-47.64Z" fill="#0a0909" stroke="#0a0909" stroke-width="2"/>
+                <path d="M198.56,0V179.63h47.64V103.2h69.19V56.43h-69.19V0h-47.64Z" fill="#0a0909" stroke="#0a0909" stroke-width="2"/>
+            </svg>
+        </div>
+
+        <div class="login-card">
+            <h1>Employee Portal</h1>
+            <p class="subtitle">Sign in to access your dashboard</p>
+
+            <div id="errorMessage" class="error-message"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" required autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="btn-primary" id="loginBtn">
+                    Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Supabase configuration
+        const SUPABASE_URL = 'https://ftzpjtvyrrnjjcvrtsab.supabase.co';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // Replace with actual key from Project Settings > API
+
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const loginForm = document.getElementById('loginForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const loginBtn = document.getElementById('loginBtn');
+        const errorMessage = document.getElementById('errorMessage');
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('show');
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideError();
+
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!email || !password) {
+                showError('Please enter both email and password.');
+                return;
+            }
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Signing in...';
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) throw error;
+
+                // Get user profile to check role
+                const { data: profile, error: profileError } = await supabase
+                    .from('user_profiles')
+                    .select('role, full_name, organization_id, department_id, is_active')
+                    .eq('id', data.user.id)
+                    .single();
+
+                if (profileError) throw profileError;
+
+                if (!profile.is_active) {
+                    await supabase.auth.signOut();
+                    throw new Error('Your account has been deactivated. Please contact your administrator.');
+                }
+
+                // Store user info
+                localStorage.setItem('user_role', profile.role);
+                localStorage.setItem('user_name', profile.full_name);
+                localStorage.setItem('user_org_id', profile.organization_id);
+                localStorage.setItem('user_dept_id', profile.department_id || '');
+
+                // Redirect to dashboard
+                window.location.href = 'dashboard.html';
+
+            } catch (error) {
+                console.error('Login error:', error);
+                showError(error.message || 'Login failed. Please check your credentials and try again.');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Sign In';
+            }
+        });
+
+        // Check if already logged in
+        (async function checkAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                window.location.href = 'dashboard.html';
+            }
+        })();
+    </script>
+</body>
+</html>

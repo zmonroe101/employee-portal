@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Portal - Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #1A1A1A;
+            color: #E0E0E0;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: #2A2A2A;
+            border-bottom: 1px solid #3A3A3A;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo svg {
+            width: 80px;
+            height: auto;
+        }
+
+        .nav {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav a {
+            color: #CCC;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav a:hover, .nav a.active {
+            color: #E60A00;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #FFF;
+        }
+
+        .user-role {
+            font-size: 0.8rem;
+            color: #999;
+            text-transform: capitalize;
+        }
+
+        .btn-logout {
+            padding: 0.5rem 1.25rem;
+            background: transparent;
+            border: 1px solid #3A3A3A;
+            color: #CCC;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .btn-logout:hover {
+            border-color: #E60A00;
+            color: #E60A00;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #FFF;
+        }
+
+        .page-subtitle {
+            color: #999;
+            margin-bottom: 2rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: #2A2A2A;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #3A3A3A;
+        }
+
+        .stat-label {
+            color: #999;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #FFF;
+        }
+
+        .stat-change {
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .stat-change.positive {
+            color: #4CAF50;
+        }
+
+        .stat-change.negative {
+            color: #E60A00;
+        }
+
+        /* Tasks Section */
+        .section {
+            background: #2A2A2A;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #3A3A3A;
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #FFF;
+        }
+
+        .btn-new {
+            padding: 0.5rem 1.25rem;
+            background: #E60A00;
+            border: none;
+            color: #FFF;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .btn-new:hover {
+            background: #C00900;
+        }
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .task-item {
+            background: #1A1A1A;
+            border-radius: 6px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #3A3A3A;
+            transition: border-color 0.2s;
+        }
+
+        .task-item:hover {
+            border-color: #4A4A4A;
+        }
+
+        .task-info {
+            flex: 1;
+        }
+
+        .task-title {
+            font-weight: 600;
+            color: #FFF;
+            margin-bottom: 0.25rem;
+        }
+
+        .task-meta {
+            font-size: 0.85rem;
+            color: #999;
+        }
+
+        .task-status {
+            padding: 0.375rem 0.875rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        .status-pending {
+            background: rgba(255, 193, 7, 0.15);
+            color: #FFC107;
+        }
+
+        .status-in_progress {
+            background: rgba(33, 150, 243, 0.15);
+            color: #2196F3;
+        }
+
+        .status-completed {
+            background: rgba(76, 175, 80, 0.15);
+            color: #4CAF50;
+        }
+
+        .status-blocked {
+            background: rgba(230, 10, 0, 0.15);
+            color: #E60A00;
+        }
+
+        .priority-high {
+            border-left: 3px solid #E60A00;
+        }
+
+        .priority-urgent {
+            border-left: 3px solid #FF5722;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { border-left-color: #FF5722; }
+            50% { border-left-color: #E60A00; }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">
+                <svg viewBox="0 0 315.39 179.63" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M60.12,0V76.43H0V0H60.12ZM30.06,135.95c16.61,0,30.06,13.45,30.06,30.06s-13.45,30.06-30.06,30.06S0,182.62,0,166.01s13.45-30.06,30.06-30.06Z" fill="#0a0909" stroke="#0a0909" stroke-width="2"/>
+                    <path d="M60.12,103.2V76.43H0v26.77H60.12Z" fill="#e60a00"/>
+                    <path d="M104.5,0V179.63h47.64V0h-47.64Z" fill="#0a0909" stroke="#0a0909" stroke-width="2"/>
+                    <path d="M198.56,0V179.63h47.64V103.2h69.19V56.43h-69.19V0h-47.64Z" fill="#0a0909" stroke="#0a0909" stroke-width="2"/>
+                </svg>
+            </div>
+            <nav class="nav">
+                <a href="dashboard.html" class="active">Dashboard</a>
+                <a href="tasks.html">Tasks</a>
+                <a href="team.html">Team</a>
+                <a href="#" id="adminLink" style="display: none;">Admin</a>
+            </nav>
+        </div>
+        <div class="header-right">
+            <div class="user-info">
+                <div class="user-name" id="userName">Loading...</div>
+                <div class="user-role" id="userRole">...</div>
+            </div>
+            <button class="btn-logout" id="logoutBtn">Sign Out</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">Welcome back! Here's what's happening today.</p>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-label">My Tasks</div>
+                <div class="stat-value" id="myTasksCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">In Progress</div>
+                <div class="stat-value" id="inProgressCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Completed This Week</div>
+                <div class="stat-value" id="completedWeekCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Overdue</div>
+                <div class="stat-value" id="overdueCount">0</div>
+            </div>
+        </div>
+
+        <!-- Recent Tasks -->
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">My Tasks</h2>
+                <button class="btn-new" onclick="window.location.href='tasks.html'">View All</button>
+            </div>
+            <div id="tasksList" class="loading">Loading tasks...</div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase configuration
+        const SUPABASE_URL = 'https://ftzpjtvyrrnjjcvrtsab.supabase.co';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // Replace with actual key
+
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let userRole = localStorage.getItem('user_role');
+
+        // Check authentication
+        async function checkAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html';
+                return null;
+            }
+            return session.user;
+        }
+
+        // Load user info
+        async function loadUserInfo() {
+            const user = await checkAuth();
+            if (!user) return;
+
+            currentUser = user;
+            const userName = localStorage.getItem('user_name');
+            const userRole = localStorage.getItem('user_role');
+
+            document.getElementById('userName').textContent = userName || user.email;
+            document.getElementById('userRole').textContent = userRole || 'user';
+
+            // Show admin link for admins
+            if (userRole === 'admin') {
+                document.getElementById('adminLink').style.display = 'block';
+            }
+        }
+
+        // Load dashboard stats
+        async function loadStats() {
+            try {
+                const userId = currentUser.id;
+
+                // My tasks count
+                const { count: myTasksCount } = await supabase
+                    .from('tasks')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('assigned_to', userId)
+                    .neq('status', 'completed');
+
+                // In progress count
+                const { count: inProgressCount } = await supabase
+                    .from('tasks')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('assigned_to', userId)
+                    .eq('status', 'in_progress');
+
+                // Completed this week
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                const { count: completedWeekCount } = await supabase
+                    .from('tasks')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('assigned_to', userId)
+                    .eq('status', 'completed')
+                    .gte('completed_at', oneWeekAgo.toISOString());
+
+                // Overdue tasks
+                const { count: overdueCount } = await supabase
+                    .from('tasks')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('assigned_to', userId)
+                    .neq('status', 'completed')
+                    .lt('due_date', new Date().toISOString());
+
+                document.getElementById('myTasksCount').textContent = myTasksCount || 0;
+                document.getElementById('inProgressCount').textContent = inProgressCount || 0;
+                document.getElementById('completedWeekCount').textContent = completedWeekCount || 0;
+                document.getElementById('overdueCount').textContent = overdueCount || 0;
+
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Load recent tasks
+        async function loadTasks() {
+            const tasksList = document.getElementById('tasksList');
+            
+            try {
+                const userId = currentUser.id;
+
+                const { data: tasks, error } = await supabase
+                    .from('tasks')
+                    .select('id, title, description, status, priority, due_date, created_at')
+                    .eq('assigned_to', userId)
+                    .neq('status', 'completed')
+                    .order('priority', { ascending: false })
+                    .order('due_date', { ascending: true })
+                    .limit(5);
+
+                if (error) throw error;
+
+                if (!tasks || tasks.length === 0) {
+                    tasksList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">✓</div>
+                            <p>No active tasks. You're all caught up!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                tasksList.innerHTML = '';
+                tasksList.className = 'task-list';
+
+                tasks.forEach(task => {
+                    const taskItem = document.createElement('div');
+                    taskItem.className = `task-item priority-${task.priority || 'medium'}`;
+                    
+                    const dueDate = task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date';
+                    
+                    taskItem.innerHTML = `
+                        <div class="task-info">
+                            <div class="task-title">${escapeHtml(task.title)}</div>
+                            <div class="task-meta">Due: ${dueDate}</div>
+                        </div>
+                        <span class="task-status status-${task.status}">${task.status.replace('_', ' ')}</span>
+                    `;
+                    
+                    tasksList.appendChild(taskItem);
+                });
+
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                tasksList.innerHTML = '<div class="empty-state"><p>Error loading tasks.</p></div>';
+            }
+        }
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            localStorage.clear();
+            window.location.href = 'login.html';
+        });
+
+        // Utility: escape HTML
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Initialize
+        (async function init() {
+            await loadUserInfo();
+            if (currentUser) {
+                await Promise.all([loadStats(), loadTasks()]);
+            }
+        })();
+    </script>
+</body>
+</html>
