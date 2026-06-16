@@ -181,86 +181,178 @@
     <script>
         // Supabase configuration
         const SUPABASE_URL = 'https://ftzpjtvyrrnjjcvrtsab.supabase.co';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // Replace with actual key from Project Settings > API
-
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0enBqdHZ5cm5uampjdnJ0c2FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NjIxNjYsImV4cCI6MjA5MTIzODE2Nn0.2mzFoPtaT2grtUJ46KjU0dQbA1Yp0kyRiv-HP6KJm-g';
+        
+        // DOM Elements
         const loginForm = document.getElementById('loginForm');
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
         const loginBtn = document.getElementById('loginBtn');
         const errorMessage = document.getElementById('errorMessage');
 
+        // Initialize Supabase client
+        let supabase;
+        
         function showError(message) {
+            console.log('Showing error:', message); // Debug log
             errorMessage.textContent = message;
             errorMessage.classList.add('show');
         }
 
         function hideError() {
             errorMessage.classList.remove('show');
+            errorMessage.textContent = '';
         }
 
+        // Initialize app
+        async function initializeApp() {
+            try {
+                // Check if Supabase SDK is loaded
+                if (typeof window.supabase === 'undefined') {
+                    showError('Failed to load Supabase SDK. Please refresh the page.');
+                    return;
+                }
+
+                // Create Supabase client
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                // Check if the API key is still a placeholder
+                if (SUPABASE_ANON_KEY.includes('YOUR_ACTUAL_KEY_HERE') || SUPABASE_ANON_KEY.length < 100) {
+                    showError('⚠️ Configuration Error: Please replace SUPABASE_ANON_KEY with your actual Supabase anon key. See README.md for instructions.');
+                    loginBtn.disabled = true;
+                    return;
+                }
+
+                // Check if already logged in
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                
+                if (sessionError) {
+                    console.error('Session check error:', sessionError);
+                    showError('Unable to verify session. Please check your internet connection.');
+                    return;
+                }
+                
+                if (session) {
+                    window.location.href = 'dashboard.html';
+                }
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showError(`Initialization failed: ${error.message}`);
+            }
+        }
+
+        // Handle form submission
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            e.stopPropagation(); // Extra safety to prevent default form submission
+            
             hideError();
 
             const email = emailInput.value.trim();
             const password = passwordInput.value;
 
+            // Validation
             if (!email || !password) {
                 showError('Please enter both email and password.');
                 return;
             }
 
+            if (!supabase) {
+                showError('Application not initialized. Please refresh the page.');
+                return;
+            }
+
+            // Disable button and show loading state
             loginBtn.disabled = true;
             loginBtn.textContent = 'Signing in...';
 
             try {
+                console.log('Attempting login for:', email); // Debug log
+                
+                // Attempt sign in
                 const { data, error } = await supabase.auth.signInWithPassword({
                     email: email,
                     password: password
                 });
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Auth error:', error);
+                    throw error;
+                }
 
-                // Get user profile to check role
+                if (!data || !data.user) {
+                    throw new Error('Login succeeded but no user data returned');
+                }
+
+                console.log('Login successful, fetching profile...'); // Debug log
+
+                // Get user profile to check role and status
                 const { data: profile, error: profileError } = await supabase
                     .from('user_profiles')
                     .select('role, full_name, organization_id, department_id, is_active')
                     .eq('id', data.user.id)
                     .single();
 
-                if (profileError) throw profileError;
+                if (profileError) {
+                    console.error('Profile fetch error:', profileError);
+                    throw new Error(`Failed to load user profile: ${profileError.message}`);
+                }
+
+                if (!profile) {
+                    await supabase.auth.signOut();
+                    throw new Error('User profile not found. Please contact your administrator.');
+                }
 
                 if (!profile.is_active) {
                     await supabase.auth.signOut();
                     throw new Error('Your account has been deactivated. Please contact your administrator.');
                 }
 
-                // Store user info
+                console.log('Profile loaded, storing user info...'); // Debug log
+
+                // Store user info in localStorage
                 localStorage.setItem('user_role', profile.role);
                 localStorage.setItem('user_name', profile.full_name);
                 localStorage.setItem('user_org_id', profile.organization_id);
                 localStorage.setItem('user_dept_id', profile.department_id || '');
+                localStorage.setItem('user_id', data.user.id);
 
                 // Redirect to dashboard
+                console.log('Redirecting to dashboard...'); // Debug log
                 window.location.href = 'dashboard.html';
 
             } catch (error) {
                 console.error('Login error:', error);
-                showError(error.message || 'Login failed. Please check your credentials and try again.');
+                
+                // Show user-friendly error message
+                let errorMsg = 'Login failed. Please try again.';
+                
+                if (error.message) {
+                    if (error.message.includes('Invalid login credentials')) {
+                        errorMsg = 'Invalid email or password. Please check your credentials and try again.';
+                    } else if (error.message.includes('Email not confirmed')) {
+                        errorMsg = 'Please confirm your email address before logging in.';
+                    } else if (error.message.includes('network') || error.message.includes('fetch')) {
+                        errorMsg = 'Network error. Please check your internet connection.';
+                    } else {
+                        errorMsg = error.message;
+                    }
+                }
+                
+                showError(errorMsg);
+                
+                // Re-enable button
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Sign In';
             }
         });
 
-        // Check if already logged in
-        (async function checkAuth() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                window.location.href = 'dashboard.html';
-            }
-        })();
+        // Start initialization when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
     </script>
 </body>
 </html>

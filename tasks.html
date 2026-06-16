@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Portal - Tasks</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #1A1A1A;
+            color: #E0E0E0;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #2A2A2A;
+            border-bottom: 1px solid #3A3A3A;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo svg {
+            width: 80px;
+            height: auto;
+            display: block;
+        }
+
+        .nav {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav a {
+            color: #CCC;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav a:hover,
+        .nav a.active {
+            color: #E60A00;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #FFF;
+        }
+
+        .user-role {
+            font-size: 0.8rem;
+            color: #999;
+            text-transform: capitalize;
+        }
+
+        .btn-logout,
+        .btn-secondary,
+        .btn-danger,
+        .btn-icon {
+            padding: 0.5rem 1.25rem;
+            background: transparent;
+            border: 1px solid #3A3A3A;
+            color: #CCC;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .btn-logout:hover,
+        .btn-secondary:hover,
+        .btn-icon:hover {
+            border-color: #E60A00;
+            color: #E60A00;
+        }
+
+        .btn-primary,
+        .btn-new {
+            padding: 0.5rem 1.25rem;
+            background: #E60A00;
+            border: none;
+            color: #FFF;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover,
+        .btn-new:hover {
+            background: #C00900;
+        }
+
+        .btn-primary:disabled,
+        .btn-secondary:disabled,
+        .btn-danger:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            border-color: rgba(230, 10, 0, 0.5);
+            color: #FF8A80;
+        }
+
+        .btn-danger:hover {
+            background: rgba(230, 10, 0, 0.12);
+            border-color: #E60A00;
+            color: #FFF;
+        }
+
+        .btn-icon {
+            padding: 0.45rem 0.75rem;
+            min-width: 68px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #FFF;
+        }
+
+        .page-subtitle {
+            color: #999;
+        }
+
+        .section {
+            background: #2A2A2A;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #3A3A3A;
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #FFF;
+        }
+
+        .task-count {
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: minmax(240px, 1fr) minmax(160px, 220px) minmax(160px, 220px);
+            gap: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #CCC;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 0.75rem 0.875rem;
+            font-size: 0.95rem;
+            border: 1px solid #3A3A3A;
+            border-radius: 6px;
+            background: #1A1A1A;
+            color: #E0E0E0;
+            transition: border-color 0.2s;
+        }
+
+        textarea {
+            min-height: 110px;
+            resize: vertical;
+            line-height: 1.45;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #E60A00;
+        }
+
+        input[type="date"] {
+            color-scheme: dark;
+        }
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .task-item {
+            background: #1A1A1A;
+            border-radius: 6px;
+            border: 1px solid #3A3A3A;
+            border-left: 3px solid #777;
+            transition: border-color 0.2s;
+            overflow: hidden;
+        }
+
+        .task-item:hover {
+            border-color: #4A4A4A;
+        }
+
+        .task-summary {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 1.25rem;
+            align-items: center;
+            padding: 1rem 1.25rem;
+        }
+
+        .task-title-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.45rem;
+        }
+
+        .task-title {
+            color: #FFF;
+            font-weight: 600;
+            overflow-wrap: anywhere;
+        }
+
+        .task-description {
+            color: #BBB;
+            line-height: 1.45;
+            margin-bottom: 0.75rem;
+            overflow-wrap: anywhere;
+        }
+
+        .task-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+            color: #999;
+            font-size: 0.85rem;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: capitalize;
+            white-space: nowrap;
+        }
+
+        .status-pending {
+            background: rgba(255, 193, 7, 0.15);
+            color: #FFC107;
+        }
+
+        .status-in_progress {
+            background: rgba(33, 150, 243, 0.15);
+            color: #2196F3;
+        }
+
+        .status-completed {
+            background: rgba(76, 175, 80, 0.15);
+            color: #4CAF50;
+        }
+
+        .status-blocked {
+            background: rgba(230, 10, 0, 0.15);
+            color: #E60A00;
+        }
+
+        .priority-low {
+            border-left-color: #8BC34A;
+        }
+
+        .priority-medium {
+            border-left-color: #FFC107;
+        }
+
+        .priority-high {
+            border-left-color: #E60A00;
+        }
+
+        .priority-urgent {
+            border-left-color: #FF5722;
+            animation: pulse 2s infinite;
+        }
+
+        .priority-pill-low {
+            background: rgba(139, 195, 74, 0.15);
+            color: #AED581;
+        }
+
+        .priority-pill-medium {
+            background: rgba(255, 193, 7, 0.15);
+            color: #FFC107;
+        }
+
+        .priority-pill-high {
+            background: rgba(230, 10, 0, 0.15);
+            color: #FF8A80;
+        }
+
+        .priority-pill-urgent {
+            background: rgba(255, 87, 34, 0.18);
+            color: #FFAB91;
+        }
+
+        @keyframes pulse {
+            0%, 100% { border-left-color: #FF5722; }
+            50% { border-left-color: #E60A00; }
+        }
+
+        .due-date {
+            color: #AAA;
+        }
+
+        .due-overdue {
+            color: #FF8A80;
+            font-weight: 600;
+        }
+
+        .due-today {
+            color: #FFC107;
+            font-weight: 600;
+        }
+
+        .due-soon {
+            color: #FFD54F;
+        }
+
+        .edit-panel {
+            display: none;
+            padding: 0 1.25rem 1.25rem;
+            border-top: 1px solid #333;
+        }
+
+        .task-item.editing .edit-panel {
+            display: block;
+        }
+
+        .edit-form {
+            padding-top: 1.25rem;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .message {
+            display: none;
+            padding: 0.875rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.error {
+            background: rgba(230, 10, 0, 0.15);
+            border-left: 3px solid #E60A00;
+            color: #FFE4E1;
+        }
+
+        .message.success {
+            background: rgba(76, 175, 80, 0.15);
+            border-left: 3px solid #4CAF50;
+            color: #D7FFD9;
+        }
+
+        .empty-state,
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .loading {
+            color: #999;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.72);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            z-index: 20;
+        }
+
+        .modal-backdrop.show {
+            display: flex;
+        }
+
+        .modal {
+            width: min(680px, 100%);
+            max-height: calc(100vh - 3rem);
+            overflow-y: auto;
+            background: #2A2A2A;
+            border: 1px solid #3A3A3A;
+            border-radius: 8px;
+            box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #3A3A3A;
+        }
+
+        .modal-title {
+            color: #FFF;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            border: 1px solid #3A3A3A;
+            background: #1A1A1A;
+            color: #CCC;
+            cursor: pointer;
+            font-size: 1.25rem;
+            line-height: 1;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            border-color: #E60A00;
+            color: #E60A00;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .confirm-dialog {
+            width: min(440px, 100%);
+        }
+
+        .confirm-copy {
+            color: #CCC;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 900px) {
+            .header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .header-left,
+            .header-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .page-header .btn-new {
+                width: max-content;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .header {
+                padding: 1rem;
+            }
+
+            .header-left {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav {
+                width: 100%;
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
+
+            .header-right {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .user-info {
+                text-align: left;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .section {
+                padding: 1rem;
+            }
+
+            .section-header,
+            .task-summary,
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .section-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .task-actions,
+            .form-actions {
+                width: 100%;
+                justify-content: flex-start;
+                flex-wrap: wrap;
+            }
+
+            .btn-icon,
+            .task-actions .btn-danger {
+                flex: 1;
+                min-width: 110px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">
+                <svg viewBox="0 0 315.39 179.63" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M60.12,0V76.43H0V0H60.12ZM30.06,135.95c16.61,0,30.06,13.45,30.06,30.06s-13.45,30.06-30.06,30.06S0,182.62,0,166.01s13.45-30.06,30.06-30.06Z" fill="#0a0909" stroke="#0a0909" stroke-width="2"/>
+                    <path d="M60.12,103.2V76.43H0v26.77H60.12Z" fill="#e60a00"/>
+                    <path d="M104.5,0V179.63h47.64V0h-47.64Z" fill="#0a0909" stroke="#0a0909" stroke-width="2"/>
+                    <path d="M198.56,0V179.63h47.64V103.2h69.19V56.43h-69.19V0h-47.64Z" fill="#0a0909" stroke="#0a0909" stroke-width="2"/>
+                </svg>
+            </div>
+            <nav class="nav">
+                <a href="dashboard.html">Dashboard</a>
+                <a href="tasks.html" class="active">Tasks</a>
+                <a href="team.html">Team</a>
+                <a href="#" id="adminLink" style="display: none;">Admin</a>
+            </nav>
+        </div>
+        <div class="header-right">
+            <div class="user-info">
+                <div class="user-name" id="userName">Loading...</div>
+                <div class="user-role" id="userRole">...</div>
+            </div>
+            <button class="btn-logout" id="logoutBtn">Sign Out</button>
+        </div>
+    </div>
+
+    <main class="container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Tasks</h1>
+                <p class="page-subtitle">Create, assign, prioritize, and track work across the team.</p>
+            </div>
+            <button class="btn-new" id="openCreateModalBtn">New Task</button>
+        </div>
+
+        <div id="message" class="message" role="status"></div>
+
+        <section class="section" aria-labelledby="filtersTitle">
+            <div class="section-header">
+                <h2 class="section-title" id="filtersTitle">Filters</h2>
+                <button class="btn-secondary" id="clearFiltersBtn">Clear</button>
+            </div>
+            <div class="filters-grid">
+                <div>
+                    <label for="searchInput">Search</label>
+                    <input type="search" id="searchInput" placeholder="Search title, description, or assignee">
+                </div>
+                <div>
+                    <label for="statusFilter">Status</label>
+                    <select id="statusFilter">
+                        <option value="">All statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="blocked">Blocked</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="priorityFilter">Priority</label>
+                    <select id="priorityFilter">
+                        <option value="">All priorities</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" aria-labelledby="tasksTitle">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title" id="tasksTitle">Task List</h2>
+                    <div class="task-count" id="taskCount">Loading tasks...</div>
+                </div>
+            </div>
+            <div id="tasksList" class="loading">Loading tasks...</div>
+        </section>
+    </main>
+
+    <div class="modal-backdrop" id="createModal" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="createModalTitle">
+            <div class="modal-header">
+                <h2 class="modal-title" id="createModalTitle">Create Task</h2>
+                <button class="modal-close" type="button" id="closeCreateModalBtn" aria-label="Close create task modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="createTaskForm">
+                    <div class="form-group">
+                        <label for="taskTitle">Title</label>
+                        <input type="text" id="taskTitle" name="title" required maxlength="160" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="taskDescription">Description</label>
+                        <textarea id="taskDescription" name="description"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="taskAssignedTo">Assigned To</label>
+                            <select id="taskAssignedTo" name="assigned_to" required>
+                                <option value="">Loading people...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskDueDate">Due Date</label>
+                            <input type="date" id="taskDueDate" name="due_date">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="taskPriority">Priority</label>
+                            <select id="taskPriority" name="priority">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskStatus">Status</label>
+                            <select id="taskStatus" name="status">
+                                <option value="pending" selected>Pending</option>
+                                <option value="in_progress">In progress</option>
+                                <option value="completed">Completed</option>
+                                <option value="blocked">Blocked</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelCreateBtn">Cancel</button>
+                        <button type="submit" class="btn-primary" id="createTaskBtn">Create Task</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="deleteModal" aria-hidden="true">
+        <div class="modal confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+            <div class="modal-header">
+                <h2 class="modal-title" id="deleteModalTitle">Delete Task</h2>
+                <button class="modal-close" type="button" id="closeDeleteModalBtn" aria-label="Close delete confirmation">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="confirm-copy" id="deleteConfirmCopy">This task will be permanently deleted.</p>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelDeleteBtn">Cancel</button>
+                    <button type="button" class="btn-danger" id="confirmDeleteBtn">Delete Task</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://ftzpjtvyrrnjjcvrtsab.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0enBqdHZ5cm5uampjdnJ0c2FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NjIxNjYsImV4cCI6MjA5MTIzODE2Nn0.2mzFoPtaT2grtUJ46KjU0dQbA1Yp0kyRiv-HP6KJm-g';
+
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const STATUS_OPTIONS = ['pending', 'in_progress', 'completed', 'blocked'];
+        const PRIORITY_OPTIONS = ['low', 'medium', 'high', 'urgent'];
+        const PRIORITY_SORT = {
+            urgent: 4,
+            high: 3,
+            medium: 2,
+            low: 1
+        };
+
+        let currentUser = null;
+        let allTasks = [];
+        let userProfiles = [];
+        let taskPendingDelete = null;
+
+        const elements = {
+            userName: document.getElementById('userName'),
+            userRole: document.getElementById('userRole'),
+            adminLink: document.getElementById('adminLink'),
+            logoutBtn: document.getElementById('logoutBtn'),
+            message: document.getElementById('message'),
+            tasksList: document.getElementById('tasksList'),
+            taskCount: document.getElementById('taskCount'),
+            searchInput: document.getElementById('searchInput'),
+            statusFilter: document.getElementById('statusFilter'),
+            priorityFilter: document.getElementById('priorityFilter'),
+            clearFiltersBtn: document.getElementById('clearFiltersBtn'),
+            createModal: document.getElementById('createModal'),
+            openCreateModalBtn: document.getElementById('openCreateModalBtn'),
+            closeCreateModalBtn: document.getElementById('closeCreateModalBtn'),
+            cancelCreateBtn: document.getElementById('cancelCreateBtn'),
+            createTaskForm: document.getElementById('createTaskForm'),
+            createTaskBtn: document.getElementById('createTaskBtn'),
+            taskAssignedTo: document.getElementById('taskAssignedTo'),
+            deleteModal: document.getElementById('deleteModal'),
+            closeDeleteModalBtn: document.getElementById('closeDeleteModalBtn'),
+            cancelDeleteBtn: document.getElementById('cancelDeleteBtn'),
+            confirmDeleteBtn: document.getElementById('confirmDeleteBtn'),
+            deleteConfirmCopy: document.getElementById('deleteConfirmCopy')
+        };
+
+        async function checkAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html';
+                return null;
+            }
+            return session.user;
+        }
+
+        async function loadUserInfo() {
+            const user = await checkAuth();
+            if (!user) return;
+
+            currentUser = user;
+            const userName = localStorage.getItem('user_name');
+            const userRole = localStorage.getItem('user_role');
+
+            elements.userName.textContent = userName || user.email;
+            elements.userRole.textContent = userRole || 'user';
+
+            if (userRole === 'admin') {
+                elements.adminLink.style.display = 'block';
+            }
+        }
+
+        async function loadUserProfiles() {
+            const organizationId = localStorage.getItem('user_org_id');
+            let query = supabaseClient
+                .from('user_profiles')
+                .select('id, full_name, role, organization_id, is_active')
+                .eq('is_active', true)
+                .order('full_name', { ascending: true });
+
+            if (organizationId) {
+                query = query.eq('organization_id', organizationId);
+            }
+
+            const { data, error } = await query;
+            if (error) throw error;
+
+            userProfiles = data || [];
+            renderAssigneeOptions();
+        }
+
+        async function loadTasks() {
+            elements.tasksList.className = 'loading';
+            elements.tasksList.textContent = 'Loading tasks...';
+            elements.taskCount.textContent = 'Loading tasks...';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('tasks')
+                    .select('id, title, description, status, priority, assigned_to, due_date, created_at, completed_at')
+                    .order('due_date', { ascending: true, nullsFirst: false })
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                allTasks = (data || []).sort(sortTasks);
+                renderTasks();
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                showMessage(error.message || 'Error loading tasks.', 'error');
+                elements.tasksList.className = 'empty-state';
+                elements.tasksList.textContent = 'Error loading tasks.';
+                elements.taskCount.textContent = '0 tasks';
+            }
+        }
+
+        function sortTasks(a, b) {
+            const aCompleted = a.status === 'completed' ? 1 : 0;
+            const bCompleted = b.status === 'completed' ? 1 : 0;
+            if (aCompleted !== bCompleted) return aCompleted - bCompleted;
+
+            const aPriority = PRIORITY_SORT[a.priority] || 0;
+            const bPriority = PRIORITY_SORT[b.priority] || 0;
+            if (aPriority !== bPriority) return bPriority - aPriority;
+
+            const aDue = a.due_date ? parseDateValue(a.due_date).getTime() : Number.MAX_SAFE_INTEGER;
+            const bDue = b.due_date ? parseDateValue(b.due_date).getTime() : Number.MAX_SAFE_INTEGER;
+            if (aDue !== bDue) return aDue - bDue;
+
+            return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+        }
+
+        function renderAssigneeOptions() {
+            const options = ['<option value="">Select assignee</option>'];
+            userProfiles.forEach(profile => {
+                options.push(`<option value="${escapeHtml(profile.id)}">${escapeHtml(getProfileName(profile))}</option>`);
+            });
+            elements.taskAssignedTo.innerHTML = options.join('');
+        }
+
+        function renderTasks() {
+            const filteredTasks = getFilteredTasks();
+            elements.taskCount.textContent = `${filteredTasks.length} ${filteredTasks.length === 1 ? 'task' : 'tasks'}`;
+
+            if (filteredTasks.length === 0) {
+                elements.tasksList.className = 'empty-state';
+                elements.tasksList.textContent = allTasks.length === 0 ? 'No tasks have been created yet.' : 'No tasks match the current filters.';
+                return;
+            }
+
+            elements.tasksList.className = 'task-list';
+            elements.tasksList.innerHTML = '';
+
+            filteredTasks.forEach(task => {
+                elements.tasksList.appendChild(createTaskElement(task));
+            });
+        }
+
+        function getFilteredTasks() {
+            const searchTerm = elements.searchInput.value.trim().toLowerCase();
+            const status = elements.statusFilter.value;
+            const priority = elements.priorityFilter.value;
+
+            return allTasks.filter(task => {
+                const assigneeName = getAssigneeName(task.assigned_to).toLowerCase();
+                const searchable = [
+                    task.title || '',
+                    task.description || '',
+                    assigneeName
+                ].join(' ').toLowerCase();
+
+                const matchesSearch = !searchTerm || searchable.includes(searchTerm);
+                const matchesStatus = !status || task.status === status;
+                const matchesPriority = !priority || task.priority === priority;
+
+                return matchesSearch && matchesStatus && matchesPriority;
+            });
+        }
+
+        function createTaskElement(task) {
+            const taskItem = document.createElement('article');
+            const priority = normalizePriority(task.priority);
+            const status = normalizeStatus(task.status);
+            taskItem.className = `task-item priority-${priority}`;
+            taskItem.dataset.taskId = task.id;
+
+            const due = getDueDateInfo(task);
+            const description = task.description ? `<p class="task-description">${escapeHtml(task.description)}</p>` : '';
+
+            taskItem.innerHTML = `
+                <div class="task-summary">
+                    <div class="task-info">
+                        <div class="task-title-row">
+                            <h3 class="task-title">${escapeHtml(task.title || 'Untitled task')}</h3>
+                            <span class="pill priority-pill-${priority}">${formatLabel(priority)}</span>
+                            <span class="pill status-${status}">${formatLabel(status)}</span>
+                        </div>
+                        ${description}
+                        <div class="task-meta">
+                            <span>Assigned to ${escapeHtml(getAssigneeName(task.assigned_to))}</span>
+                            <span>&bull;</span>
+                            <span class="due-date ${due.className}">${due.label}</span>
+                        </div>
+                    </div>
+                    <div class="task-actions">
+                        <button type="button" class="btn-icon" data-action="edit">Edit</button>
+                        <button type="button" class="btn-danger" data-action="delete">Delete</button>
+                    </div>
+                </div>
+                <div class="edit-panel">
+                    ${createEditFormHtml(task)}
+                </div>
+            `;
+
+            taskItem.querySelector('[data-action="edit"]').addEventListener('click', () => toggleEditPanel(taskItem));
+            taskItem.querySelector('[data-action="delete"]').addEventListener('click', () => openDeleteModal(task));
+            taskItem.querySelector('.edit-form').addEventListener('submit', event => updateTask(event, task.id));
+            taskItem.querySelector('[data-action="cancel-edit"]').addEventListener('click', () => toggleEditPanel(taskItem, false));
+
+            return taskItem;
+        }
+
+        function createEditFormHtml(task) {
+            const priority = normalizePriority(task.priority);
+            const status = normalizeStatus(task.status);
+            const dueDate = task.due_date ? toDateInputValue(task.due_date) : '';
+
+            return `
+                <form class="edit-form">
+                    <div class="form-group">
+                        <label for="edit-title-${escapeHtml(task.id)}">Title</label>
+                        <input type="text" id="edit-title-${escapeHtml(task.id)}" name="title" required maxlength="160" value="${escapeHtml(task.title || '')}" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-description-${escapeHtml(task.id)}">Description</label>
+                        <textarea id="edit-description-${escapeHtml(task.id)}" name="description">${escapeHtml(task.description || '')}</textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-assigned-${escapeHtml(task.id)}">Assigned To</label>
+                            <select id="edit-assigned-${escapeHtml(task.id)}" name="assigned_to" required>
+                                ${getAssigneeOptionsHtml(task.assigned_to)}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-due-${escapeHtml(task.id)}">Due Date</label>
+                            <input type="date" id="edit-due-${escapeHtml(task.id)}" name="due_date" value="${escapeHtml(dueDate)}">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-priority-${escapeHtml(task.id)}">Priority</label>
+                            <select id="edit-priority-${escapeHtml(task.id)}" name="priority">
+                                ${PRIORITY_OPTIONS.map(option => `<option value="${option}" ${option === priority ? 'selected' : ''}>${formatLabel(option)}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-status-${escapeHtml(task.id)}">Status</label>
+                            <select id="edit-status-${escapeHtml(task.id)}" name="status">
+                                ${STATUS_OPTIONS.map(option => `<option value="${option}" ${option === status ? 'selected' : ''}>${formatLabel(option)}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" data-action="cancel-edit">Cancel</button>
+                        <button type="submit" class="btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            `;
+        }
+
+        function getAssigneeOptionsHtml(selectedId) {
+            return userProfiles.map(profile => {
+                const selected = profile.id === selectedId ? 'selected' : '';
+                return `<option value="${escapeHtml(profile.id)}" ${selected}>${escapeHtml(getProfileName(profile))}</option>`;
+            }).join('');
+        }
+
+        function toggleEditPanel(taskItem, forceOpen) {
+            const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !taskItem.classList.contains('editing');
+            document.querySelectorAll('.task-item.editing').forEach(item => {
+                if (item !== taskItem) item.classList.remove('editing');
+            });
+            taskItem.classList.toggle('editing', shouldOpen);
+        }
+
+        async function createTask(event) {
+            event.preventDefault();
+            hideMessage();
+
+            const formData = new FormData(elements.createTaskForm);
+            const payload = buildTaskPayload(formData);
+
+            if (!payload.title || !payload.assigned_to) {
+                showMessage('Title and assignee are required.', 'error');
+                return;
+            }
+
+            elements.createTaskBtn.disabled = true;
+            elements.createTaskBtn.textContent = 'Creating...';
+
+            try {
+                const { error } = await supabaseClient
+                    .from('tasks')
+                    .insert([payload]);
+
+                if (error) throw error;
+
+                closeCreateModal();
+                showMessage('Task created.', 'success');
+                await loadTasks();
+            } catch (error) {
+                console.error('Error creating task:', error);
+                showMessage(error.message || 'Error creating task.', 'error');
+            } finally {
+                elements.createTaskBtn.disabled = false;
+                elements.createTaskBtn.textContent = 'Create Task';
+            }
+        }
+
+        async function updateTask(event, taskId) {
+            event.preventDefault();
+            hideMessage();
+
+            const form = event.currentTarget;
+            const submitButton = form.querySelector('button[type="submit"]');
+            const payload = buildTaskPayload(new FormData(form));
+            const previousTask = allTasks.find(task => task.id === taskId);
+
+            if (!payload.title || !payload.assigned_to) {
+                showMessage('Title and assignee are required.', 'error');
+                return;
+            }
+
+            payload.completed_at = payload.status === 'completed'
+                ? previousTask?.completed_at || new Date().toISOString()
+                : null;
+
+            submitButton.disabled = true;
+            submitButton.textContent = 'Saving...';
+
+            try {
+                const { error } = await supabaseClient
+                    .from('tasks')
+                    .update(payload)
+                    .eq('id', taskId);
+
+                if (error) throw error;
+
+                showMessage('Task updated.', 'success');
+                await loadTasks();
+            } catch (error) {
+                console.error('Error updating task:', error);
+                showMessage(error.message || 'Error updating task.', 'error');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Save Changes';
+            }
+        }
+
+        async function deleteTask() {
+            if (!taskPendingDelete) return;
+
+            hideMessage();
+            elements.confirmDeleteBtn.disabled = true;
+            elements.confirmDeleteBtn.textContent = 'Deleting...';
+
+            try {
+                const { error } = await supabaseClient
+                    .from('tasks')
+                    .delete()
+                    .eq('id', taskPendingDelete.id);
+
+                if (error) throw error;
+
+                closeDeleteModal();
+                showMessage('Task deleted.', 'success');
+                await loadTasks();
+            } catch (error) {
+                console.error('Error deleting task:', error);
+                showMessage(error.message || 'Error deleting task.', 'error');
+            } finally {
+                elements.confirmDeleteBtn.disabled = false;
+                elements.confirmDeleteBtn.textContent = 'Delete Task';
+            }
+        }
+
+        function buildTaskPayload(formData) {
+            const status = normalizeStatus(formData.get('status'));
+            const dueDate = formData.get('due_date');
+            const payload = {
+                title: String(formData.get('title') || '').trim(),
+                description: String(formData.get('description') || '').trim() || null,
+                assigned_to: formData.get('assigned_to') || null,
+                due_date: dueDate || null,
+                priority: normalizePriority(formData.get('priority')),
+                status
+            };
+
+            if (status === 'completed') {
+                payload.completed_at = new Date().toISOString();
+            }
+
+            return payload;
+        }
+
+        function openCreateModal() {
+            hideMessage();
+            elements.createTaskForm.reset();
+            elements.taskAssignedTo.value = currentUser?.id || '';
+            document.getElementById('taskPriority').value = 'medium';
+            document.getElementById('taskStatus').value = 'pending';
+            elements.createModal.classList.add('show');
+            elements.createModal.setAttribute('aria-hidden', 'false');
+            document.getElementById('taskTitle').focus();
+        }
+
+        function closeCreateModal() {
+            elements.createModal.classList.remove('show');
+            elements.createModal.setAttribute('aria-hidden', 'true');
+        }
+
+        function openDeleteModal(task) {
+            hideMessage();
+            taskPendingDelete = task;
+            elements.deleteConfirmCopy.textContent = `Delete "${task.title || 'Untitled task'}"? This action cannot be undone.`;
+            elements.deleteModal.classList.add('show');
+            elements.deleteModal.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeDeleteModal() {
+            elements.deleteModal.classList.remove('show');
+            elements.deleteModal.setAttribute('aria-hidden', 'true');
+            taskPendingDelete = null;
+        }
+
+        function clearFilters() {
+            elements.searchInput.value = '';
+            elements.statusFilter.value = '';
+            elements.priorityFilter.value = '';
+            renderTasks();
+        }
+
+        function getAssigneeName(userId) {
+            const profile = userProfiles.find(item => item.id === userId);
+            return profile ? getProfileName(profile) : 'Unassigned';
+        }
+
+        function getProfileName(profile) {
+            return profile.full_name || profile.id;
+        }
+
+        function getDueDateInfo(task) {
+            if (!task.due_date) {
+                return { label: 'No due date', className: '' };
+            }
+
+            const today = startOfDay(new Date());
+            const dueDate = startOfDay(parseDateValue(task.due_date));
+            const diffDays = Math.round((dueDate - today) / 86400000);
+            const formattedDate = dueDate.toLocaleDateString();
+
+            if (task.status === 'completed') {
+                return { label: `Completed by ${formattedDate}`, className: '' };
+            }
+
+            if (diffDays < 0) {
+                return { label: `Overdue: ${formattedDate}`, className: 'due-overdue' };
+            }
+
+            if (diffDays === 0) {
+                return { label: `Due today: ${formattedDate}`, className: 'due-today' };
+            }
+
+            if (diffDays <= 3) {
+                return { label: `Due soon: ${formattedDate}`, className: 'due-soon' };
+            }
+
+            return { label: `Due: ${formattedDate}`, className: '' };
+        }
+
+        function startOfDay(date) {
+            return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        }
+
+        function parseDateValue(value) {
+            const dateOnlyMatch = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (dateOnlyMatch) {
+                return new Date(
+                    Number(dateOnlyMatch[1]),
+                    Number(dateOnlyMatch[2]) - 1,
+                    Number(dateOnlyMatch[3])
+                );
+            }
+            return new Date(value);
+        }
+
+        function toDateInputValue(value) {
+            const dateOnlyMatch = String(value || '').match(/^(\d{4}-\d{2}-\d{2})/);
+            if (dateOnlyMatch) return dateOnlyMatch[1];
+
+            const date = parseDateValue(value);
+            if (Number.isNaN(date.getTime())) return '';
+            const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+            return offsetDate.toISOString().split('T')[0];
+        }
+
+        function normalizeStatus(value) {
+            return STATUS_OPTIONS.includes(value) ? value : 'pending';
+        }
+
+        function normalizePriority(value) {
+            return PRIORITY_OPTIONS.includes(value) ? value : 'medium';
+        }
+
+        function formatLabel(value) {
+            return String(value || '').replace(/_/g, ' ');
+        }
+
+        function showMessage(text, type) {
+            elements.message.textContent = text;
+            elements.message.className = `message ${type} show`;
+        }
+
+        function hideMessage() {
+            elements.message.className = 'message';
+            elements.message.textContent = '';
+        }
+
+        function escapeHtml(value) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(value ?? '').replace(/[&<>"']/g, character => map[character]);
+        }
+
+        elements.logoutBtn.addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+            localStorage.clear();
+            window.location.href = 'login.html';
+        });
+
+        elements.openCreateModalBtn.addEventListener('click', openCreateModal);
+        elements.closeCreateModalBtn.addEventListener('click', closeCreateModal);
+        elements.cancelCreateBtn.addEventListener('click', closeCreateModal);
+        elements.createTaskForm.addEventListener('submit', createTask);
+        elements.closeDeleteModalBtn.addEventListener('click', closeDeleteModal);
+        elements.cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+        elements.confirmDeleteBtn.addEventListener('click', deleteTask);
+        elements.clearFiltersBtn.addEventListener('click', clearFilters);
+        elements.searchInput.addEventListener('input', renderTasks);
+        elements.statusFilter.addEventListener('change', renderTasks);
+        elements.priorityFilter.addEventListener('change', renderTasks);
+
+        elements.createModal.addEventListener('click', event => {
+            if (event.target === elements.createModal) closeCreateModal();
+        });
+
+        elements.deleteModal.addEventListener('click', event => {
+            if (event.target === elements.deleteModal) closeDeleteModal();
+        });
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                closeCreateModal();
+                closeDeleteModal();
+            }
+        });
+
+        (async function init() {
+            try {
+                await loadUserInfo();
+                if (!currentUser) return;
+                await loadUserProfiles();
+                await loadTasks();
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showMessage(error.message || 'Unable to load tasks.', 'error');
+            }
+        })();
+    </script>
+</body>
+</html>

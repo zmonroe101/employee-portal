@@ -8,8 +8,8 @@ Dark-themed employee portal for Redeemed Enterprises' multi-organization trackin
 
 - `login.html` - Login page with email/password authentication
 - `dashboard.html` - Dashboard with task overview and stats
-- `tasks.html` - Full task management UI (TODO)
-- `team.html` - Team directory (TODO)
+- `tasks.html` - Full task management UI with task CRUD, filters, and assignee selection
+- `team.html` - Team directory and org chart
 
 ## Setup Instructions
 
@@ -27,6 +27,11 @@ const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // Replace with actual key
 ```
 
 **In `dashboard.html` line 360:**
+```javascript
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // Replace with actual key
+```
+
+**In `tasks.html`:**
 ```javascript
 const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // Replace with actual key
 ```
@@ -72,6 +77,8 @@ WHERE email = 'zmonroe@heinepropane.com';
 ✅ Login with email/password (Supabase Auth)
 ✅ Dashboard with stats (My Tasks, In Progress, Completed, Overdue)
 ✅ Recent tasks list with priority indicators
+✅ Full task management UI with create, edit, delete, search, and filters
+✅ Team directory with organization selector, department cards, search/filter, org chart, and detail modal
 ✅ Role-based UI (admin sees "Admin" link)
 ✅ Dark theme (#1A1A1A) with red accent (#E60A00)
 ✅ Branded red H logo
@@ -87,12 +94,11 @@ WHERE email = 'zmonroe@heinepropane.com';
 
 ## Next Steps
 
-1. **Tasks Page** - Full task CRUD (Create/Read/Update/Delete)
-2. **Team Page** - View team members, departments, org chart
-3. **Admin Panel** - User management, organization management
-4. **Task Comments** - Add comments to tasks
-5. **Real-time Updates** - Supabase Realtime for live task updates
-6. **Mobile App** - Consider React Native or PWA
+1. **Team Page** - View team members, departments, org chart
+2. **Admin Panel** - User management, organization management
+3. **Task Comments** - Add comments to tasks
+4. **Real-time Updates** - Supabase Realtime for live task updates
+5. **Mobile App** - Consider React Native or PWA
 
 ## Troubleshooting
 

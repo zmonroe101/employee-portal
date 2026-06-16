@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Portal - Team</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #1A1A1A;
+            color: #E0E0E0;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #2A2A2A;
+            border-bottom: 1px solid #3A3A3A;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo svg {
+            width: 80px;
+            height: auto;
+            display: block;
+        }
+
+        .nav {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav a {
+            color: #CCC;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav a:hover,
+        .nav a.active {
+            color: #E60A00;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #FFF;
+        }
+
+        .user-role {
+            font-size: 0.8rem;
+            color: #999;
+            text-transform: capitalize;
+        }
+
+        .btn-logout,
+        .btn-secondary,
+        .btn-view,
+        .btn-card-edit,
+        .btn-close {
+            background: transparent;
+            border: 1px solid #3A3A3A;
+            color: #CCC;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .btn-logout,
+        .btn-secondary,
+        .btn-view {
+            padding: 0.5rem 1.25rem;
+        }
+
+        .btn-logout:hover,
+        .btn-secondary:hover,
+        .btn-view:hover,
+        .btn-card-edit:hover,
+        .btn-close:hover {
+            border-color: #E60A00;
+            color: #E60A00;
+        }
+
+        .btn-primary {
+            padding: 0.5rem 1.25rem;
+            background: #E60A00;
+            border: none;
+            color: #FFF;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #C00900;
+        }
+
+        .btn-primary:disabled,
+        .btn-secondary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #FFF;
+        }
+
+        .page-subtitle {
+            color: #999;
+        }
+
+        .section {
+            background: #2A2A2A;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #3A3A3A;
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #FFF;
+        }
+
+        .section-meta {
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: minmax(220px, 1.1fr) minmax(220px, 1.1fr) minmax(260px, 1.6fr) auto;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+        }
+
+        .field label {
+            color: #999;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+
+        input,
+        select {
+            width: 100%;
+            min-height: 42px;
+            background: #1A1A1A;
+            border: 1px solid #3A3A3A;
+            border-radius: 6px;
+            color: #E0E0E0;
+            font: inherit;
+            padding: 0.6rem 0.75rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #E60A00;
+            box-shadow: 0 0 0 3px rgba(230, 10, 0, 0.12);
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+
+        .btn-view.active {
+            background: rgba(230, 10, 0, 0.14);
+            border-color: #E60A00;
+            color: #FFF;
+        }
+
+        .department-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1rem;
+        }
+
+        .department-card {
+            background: #1A1A1A;
+            border: 1px solid #3A3A3A;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .department-name {
+            color: #FFF;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .department-stat {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            color: #999;
+            font-size: 0.9rem;
+            margin-top: 0.45rem;
+        }
+
+        .department-stat strong {
+            color: #E0E0E0;
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .employee-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .employee-card {
+            background: #1A1A1A;
+            border: 1px solid #3A3A3A;
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 228px;
+            cursor: pointer;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+
+        .employee-card:hover,
+        .employee-card:focus {
+            border-color: #4A4A4A;
+            transform: translateY(-1px);
+            outline: none;
+        }
+
+        .employee-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .employee-name {
+            color: #FFF;
+            font-size: 1.05rem;
+            font-weight: 700;
+            line-height: 1.25;
+        }
+
+        .employee-role {
+            color: #E60A00;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 0.25rem;
+            text-transform: capitalize;
+        }
+
+        .employee-fields {
+            display: grid;
+            gap: 0.5rem;
+        }
+
+        .employee-field {
+            display: grid;
+            grid-template-columns: 76px minmax(0, 1fr);
+            gap: 0.65rem;
+            color: #CCC;
+            font-size: 0.88rem;
+            line-height: 1.35;
+        }
+
+        .employee-field span:first-child {
+            color: #777;
+        }
+
+        .employee-field span:last-child {
+            overflow-wrap: anywhere;
+        }
+
+        .btn-card-edit {
+            flex: 0 0 auto;
+            padding: 0.35rem 0.75rem;
+            font-size: 0.82rem;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            min-height: 24px;
+            padding: 0.2rem 0.65rem;
+            border-radius: 20px;
+            background: rgba(76, 175, 80, 0.14);
+            color: #4CAF50;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .pill.inactive {
+            background: rgba(230, 10, 0, 0.14);
+            color: #E60A00;
+        }
+
+        .org-chart {
+            display: grid;
+            gap: 1.25rem;
+        }
+
+        .tree-root,
+        .tree-branch {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .tree-root {
+            background: #1A1A1A;
+            border: 1px solid #3A3A3A;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .tree-card {
+            border: 1px solid #3A3A3A;
+            border-radius: 8px;
+            padding: 0.85rem 1rem;
+            background: #232323;
+        }
+
+        .tree-card.employee-tree-card {
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .tree-card.employee-tree-card:hover,
+        .tree-card.employee-tree-card:focus {
+            border-color: #E60A00;
+            outline: none;
+        }
+
+        .tree-title {
+            color: #FFF;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .tree-meta {
+            color: #999;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+
+        .tree-children {
+            display: grid;
+            gap: 0.75rem;
+            margin-left: 1.25rem;
+            padding-left: 1rem;
+            border-left: 1px solid #3A3A3A;
+        }
+
+        .employee-tree-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .loading,
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #999;
+        }
+
+        .status-message {
+            display: none;
+            margin-bottom: 1rem;
+            padding: 0.85rem 1rem;
+            border-radius: 6px;
+            border: 1px solid #3A3A3A;
+            background: #2A2A2A;
+            color: #CCC;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-message.error {
+            border-color: rgba(230, 10, 0, 0.65);
+            color: #FFF;
+        }
+
+        .status-message.success {
+            border-color: rgba(76, 175, 80, 0.65);
+            color: #FFF;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.72);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            z-index: 20;
+        }
+
+        .modal-backdrop.show {
+            display: flex;
+        }
+
+        .modal {
+            width: min(760px, 100%);
+            max-height: min(860px, 92vh);
+            overflow: auto;
+            background: #2A2A2A;
+            border: 1px solid #3A3A3A;
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-bottom: 1px solid #3A3A3A;
+        }
+
+        .modal-title {
+            color: #FFF;
+            font-size: 1.35rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .modal-subtitle {
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        .btn-close {
+            width: 38px;
+            height: 38px;
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            padding: 1.25rem 1.5rem;
+            border-top: 1px solid #3A3A3A;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .detail-item {
+            background: #1A1A1A;
+            border: 1px solid #3A3A3A;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .detail-label {
+            color: #777;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 0.4rem;
+        }
+
+        .detail-value {
+            color: #FFF;
+            overflow-wrap: anywhere;
+        }
+
+        .employee-form {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .employee-form .field-wide {
+            grid-column: 1 / -1;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            min-height: 42px;
+            padding-top: 1.25rem;
+        }
+
+        .checkbox-row input {
+            width: 18px;
+            min-height: 18px;
+            accent-color: #E60A00;
+        }
+
+        @media (max-width: 920px) {
+            .header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .header-left,
+            .header-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .nav {
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
+
+            .filters {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .view-toggle {
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .header,
+            .container {
+                padding: 1rem;
+            }
+
+            .header-left,
+            .header-right,
+            .page-header,
+            .section-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .user-info {
+                text-align: left;
+            }
+
+            .filters,
+            .detail-grid,
+            .employee-form {
+                grid-template-columns: 1fr;
+            }
+
+            .employee-field {
+                grid-template-columns: 68px minmax(0, 1fr);
+            }
+
+            .tree-children {
+                margin-left: 0.35rem;
+                padding-left: 0.75rem;
+            }
+
+            .modal-actions {
+                flex-direction: column-reverse;
+            }
+
+            .modal-actions button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">
+                <svg viewBox="0 0 315.39 179.63" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M60.12,0V76.43H0V0H60.12ZM30.06,135.95c16.61,0,30.06,13.45,30.06,30.06s-13.45,30.06-30.06,30.06S0,182.62,0,166.01s13.45-30.06,30.06-30.06Z" fill="#0a0909" stroke="#0a0909" stroke-width="2"/>
+                    <path d="M60.12,103.2V76.43H0v26.77H60.12Z" fill="#e60a00"/>
+                    <path d="M104.5,0V179.63h47.64V0h-47.64Z" fill="#0a0909" stroke="#0a0909" stroke-width="2"/>
+                    <path d="M198.56,0V179.63h47.64V103.2h69.19V56.43h-69.19V0h-47.64Z" fill="#0a0909" stroke="#0a0909" stroke-width="2"/>
+                </svg>
+            </div>
+            <nav class="nav">
+                <a href="dashboard.html">Dashboard</a>
+                <a href="tasks.html">Tasks</a>
+                <a href="team.html" class="active">Team</a>
+                <a href="#" id="adminLink" style="display: none;">Admin</a>
+            </nav>
+        </div>
+        <div class="header-right">
+            <div class="user-info">
+                <div class="user-name" id="userName">Loading...</div>
+                <div class="user-role" id="userRole">...</div>
+            </div>
+            <button class="btn-logout" id="logoutBtn">Sign Out</button>
+        </div>
+    </div>
+
+    <main class="container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Team</h1>
+                <p class="page-subtitle">Directory and org chart.</p>
+            </div>
+            <button class="btn-primary" id="addEmployeeBtn" style="display: none;">Add Employee</button>
+        </div>
+
+        <div class="status-message" id="statusMessage"></div>
+
+        <section class="section">
+            <div class="filters">
+                <div class="field">
+                    <label for="orgSelect">Organization</label>
+                    <select id="orgSelect">
+                        <option value="all">All Organizations</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="departmentFilter">Department</label>
+                    <select id="departmentFilter">
+                        <option value="all">All Departments</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="searchInput">Search</label>
+                    <input id="searchInput" type="search" placeholder="Name, role, email, phone">
+                </div>
+                <div class="view-toggle" aria-label="Team view">
+                    <button class="btn-view active" type="button" data-view="directory">Directory</button>
+                    <button class="btn-view" type="button" data-view="chart">Org Chart</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">Departments</h2>
+                <div class="section-meta" id="departmentMeta">Loading...</div>
+            </div>
+            <div class="department-grid" id="departmentCards">
+                <div class="loading">Loading departments...</div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title" id="peopleSectionTitle">Employee Directory</h2>
+                    <div class="section-meta" id="resultCount">Loading...</div>
+                </div>
+            </div>
+            <div class="employee-grid" id="employeeGrid">
+                <div class="loading">Loading employees...</div>
+            </div>
+            <div class="org-chart hidden" id="orgChart"></div>
+        </section>
+    </main>
+
+    <div class="modal-backdrop" id="employeeModal" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title" id="modalTitle">Employee</h2>
+                    <div class="modal-subtitle" id="modalSubtitle"></div>
+                </div>
+                <button class="btn-close" type="button" id="modalCloseBtn" aria-label="Close">x</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-actions" id="modalActions"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://ftzpjtvyrrnjjcvrtsab.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbG...Jm-g';
+
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let currentProfile = null;
+        let userRole = localStorage.getItem('user_role') || '';
+        let organizations = [];
+        let departments = [];
+        let employees = [];
+        let selectedView = 'directory';
+        let selectedEmployee = null;
+
+        const elements = {
+            userName: document.getElementById('userName'),
+            userRole: document.getElementById('userRole'),
+            adminLink: document.getElementById('adminLink'),
+            logoutBtn: document.getElementById('logoutBtn'),
+            addEmployeeBtn: document.getElementById('addEmployeeBtn'),
+            statusMessage: document.getElementById('statusMessage'),
+            orgSelect: document.getElementById('orgSelect'),
+            departmentFilter: document.getElementById('departmentFilter'),
+            searchInput: document.getElementById('searchInput'),
+            departmentCards: document.getElementById('departmentCards'),
+            departmentMeta: document.getElementById('departmentMeta'),
+            employeeGrid: document.getElementById('employeeGrid'),
+            orgChart: document.getElementById('orgChart'),
+            resultCount: document.getElementById('resultCount'),
+            peopleSectionTitle: document.getElementById('peopleSectionTitle'),
+            employeeModal: document.getElementById('employeeModal'),
+            modalCloseBtn: document.getElementById('modalCloseBtn'),
+            modalTitle: document.getElementById('modalTitle'),
+            modalSubtitle: document.getElementById('modalSubtitle'),
+            modalBody: document.getElementById('modalBody'),
+            modalActions: document.getElementById('modalActions')
+        };
+
+        async function checkAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html';
+                return null;
+            }
+            return session.user;
+        }
+
+        async function loadUserInfo() {
+            const user = await checkAuth();
+            if (!user) return;
+
+            currentUser = user;
+            currentProfile = null;
+
+            try {
+                const { data: profile, error } = await supabaseClient
+                    .from('user_profiles')
+                    .select('id, full_name, role, organization_id, department_id, is_active')
+                    .eq('id', user.id)
+                    .maybeSingle();
+
+                if (error) throw error;
+                currentProfile = profile;
+
+                if (profile && profile.is_active === false) {
+                    await supabaseClient.auth.signOut();
+                    localStorage.clear();
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                if (profile) {
+                    userRole = profile.role || userRole || 'user';
+                    localStorage.setItem('user_role', userRole);
+                    localStorage.setItem('user_name', profile.full_name || user.email);
+                    localStorage.setItem('user_org_id', profile.organization_id || '');
+                    localStorage.setItem('user_dept_id', profile.department_id || '');
+                }
+            } catch (error) {
+                console.error('Error loading user profile:', error);
+            }
+
+            const displayName = localStorage.getItem('user_name') || currentProfile?.full_name || user.email;
+            const displayRole = userRole || localStorage.getItem('user_role') || 'user';
+
+            elements.userName.textContent = displayName;
+            elements.userRole.textContent = displayRole;
+
+            if (isAdmin()) {
+                elements.adminLink.style.display = 'block';
+                elements.addEmployeeBtn.style.display = 'inline-flex';
+            }
+        }
+
+        async function loadTeamData() {
+            setLoadingState();
+
+            try {
+                const [profileRows, departmentRows, organizationRows] = await Promise.all([
+                    fetchProfiles(),
+                    fetchDepartments(),
+                    fetchOrganizations()
+                ]);
+
+                departments = normalizeDepartments(departmentRows);
+                organizations = normalizeOrganizations(organizationRows);
+                employees = normalizeEmployees(profileRows);
+                hydrateLookups();
+                populateOrganizationSelector();
+                populateDepartmentFilter();
+                renderAll();
+            } catch (error) {
+                console.error('Error loading team data:', error);
+                showStatus(error.message || 'Error loading team data.', 'error');
+                elements.departmentCards.innerHTML = '<div class="empty-state">Unable to load departments.</div>';
+                elements.employeeGrid.innerHTML = '<div class="empty-state">Unable to load employees.</div>';
+                elements.resultCount.textContent = '0 employees';
+                elements.departmentMeta.textContent = '0 departments';
+            }
+        }
+
+        async function fetchProfiles() {
+            const joinedSelect = `
+                id,
+                full_name,
+                email,
+                phone,
+                role,
+                hire_date,
+                organization_id,
+                department_id,
+                is_active,
+                departments:department_id (
+                    id,
+                    name,
+                    organization_id
+                ),
+                organizations:organization_id (
+                    id,
+                    name
+                )
+            `;
+
+            const joinedResult = await supabaseClient
+                .from('user_profiles')
+                .select(joinedSelect)
+                .order('full_name', { ascending: true });
+
+            if (!joinedResult.error) return joinedResult.data || [];
+
+            console.warn('Joined profile query failed; using direct profile query.', joinedResult.error);
+
+            const selectAttempts = [
+                'id, full_name, email, phone, role, hire_date, organization_id, department_id, is_active',
+                'id, full_name, email, role, organization_id, department_id, is_active'
+            ];
+
+            let lastError = joinedResult.error;
+            for (const selectColumns of selectAttempts) {
+                const result = await supabaseClient
+                    .from('user_profiles')
+                    .select(selectColumns)
+                    .order('full_name', { ascending: true });
+
+                if (!result.error) return result.data || [];
+                lastError = result.error;
+            }
+
+            throw lastError;
+        }
+
+        async function fetchDepartments() {
+            const withManager = await supabaseClient
+                .from('departments')
+                .select('id, name, organization_id, manager_id')
+                .order('name', { ascending: true });
+
+            if (!withManager.error) return withManager.data || [];
+
+            console.warn('Department manager query failed; loading departments without manager_id.', withManager.error);
+
+            const basic = await supabaseClient
+                .from('departments')
+                .select('id, name, organization_id')
+                .order('name', { ascending: true });
+
+            if (basic.error) throw basic.error;
+            return basic.data || [];
+        }
+
+        async function fetchOrganizations() {
+            const { data, error } = await supabaseClient
+                .from('organizations')
+                .select('id, name')
+                .order('name', { ascending: true });
+
+            if (error) throw error;
+            return data || [];
+        }
+
+        function normalizeOrganizations(rows) {
+            return rows.map(row => ({
+                id: normalizeId(row.id),
+                name: row.name || 'Unnamed Organization'
+            })).filter(org => org.id);
+        }
+
+        function normalizeDepartments(rows) {
+            return rows.map(row => ({
+                id: normalizeId(row.id),
+                name: row.name || 'Unnamed Department',
+                organizationId: normalizeId(row.organization_id),
+                managerId: normalizeId(row.manager_id)
+            })).filter(department => department.id);
+        }
+
+        function normalizeEmployees(rows) {
+            const departmentMap = new Map(departments.map(department => [department.id, department]));
+            const organizationMap = new Map(organizations.map(org => [org.id, org]));
+
+            return rows.map(row => {
+                const joinedDepartment = unwrapRelation(row.departments);
+                const joinedOrganization = unwrapRelation(row.organizations);
+                const departmentId = normalizeId(row.department_id || joinedDepartment?.id);
+                const department = departmentMap.get(departmentId) || normalizeJoinedDepartment(joinedDepartment);
+                const organizationId = normalizeId(row.organization_id || joinedOrganization?.id || department?.organizationId);
+                const organization = organizationMap.get(organizationId) || normalizeJoinedOrganization(joinedOrganization);
+
+                return {
+                    id: normalizeId(row.id),
+                    name: row.full_name || row.name || row.email || 'Unnamed Employee',
+                    role: row.role || 'employee',
+                    departmentId,
+                    departmentName: department?.name || 'Unassigned',
+                    organizationId,
+                    organizationName: organization?.name || 'Unknown Organization',
+                    email: row.email || '',
+                    phone: row.phone || '',
+                    hireDate: row.hire_date || '',
+                    isActive: row.is_active !== false,
+                    raw: row
+                };
+            }).filter(employee => employee.id);
+        }
+
+        function normalizeJoinedDepartment(row) {
+            if (!row) return null;
+            return {
+                id: normalizeId(row.id),
+                name: row.name || 'Unnamed Department',
+                organizationId: normalizeId(row.organization_id),
+                managerId: normalizeId(row.manager_id)
+            };
+        }
+
+        function normalizeJoinedOrganization(row) {
+            if (!row) return null;
+            return {
+                id: normalizeId(row.id),
+                name: row.name || 'Unnamed Organization'
+            };
+        }
+
+        function hydrateLookups() {
+            const orgMap = new Map(organizations.map(org => [org.id, org]));
+            const deptMap = new Map(departments.map(department => [department.id, department]));
+
+            employees.forEach(employee => {
+                if (employee.organizationId && !orgMap.has(employee.organizationId)) {
+                    const org = {
+                        id: employee.organizationId,
+                        name: employee.organizationName || 'Unknown Organization'
+                    };
+                    organizations.push(org);
+                    orgMap.set(org.id, org);
+                }
+
+                if (employee.departmentId && !deptMap.has(employee.departmentId)) {
+                    const department = {
+                        id: employee.departmentId,
+                        name: employee.departmentName || 'Unnamed Department',
+                        organizationId: employee.organizationId,
+                        managerId: ''
+                    };
+                    departments.push(department);
+                    deptMap.set(department.id, department);
+                }
+            });
+
+            organizations.sort((a, b) => a.name.localeCompare(b.name));
+            departments.sort((a, b) => a.name.localeCompare(b.name));
+        }
+
+        function populateOrganizationSelector() {
+            const currentValue = elements.orgSelect.value;
+            const defaultOrgId = isAdmin() ? 'all' : (localStorage.getItem('user_org_id') || currentProfile?.organization_id || 'all');
+            const targetValue = currentValue || normalizeId(defaultOrgId) || 'all';
+
+            elements.orgSelect.innerHTML = '<option value="all">All Organizations</option>';
+            organizations.forEach(org => {
+                const option = document.createElement('option');
+                option.value = org.id;
+                option.textContent = org.name;
+                elements.orgSelect.appendChild(option);
+            });
+
+            const values = Array.from(elements.orgSelect.options).map(option => option.value);
+            elements.orgSelect.value = values.includes(targetValue) ? targetValue : 'all';
+        }
+
+        function populateDepartmentFilter() {
+            const currentValue = elements.departmentFilter.value;
+            const selectedOrgId = elements.orgSelect.value;
+            const availableDepartments = departments.filter(department => {
+                return selectedOrgId === 'all' || department.organizationId === selectedOrgId;
+            });
+
+            elements.departmentFilter.innerHTML = '<option value="all">All Departments</option>';
+            availableDepartments.forEach(department => {
+                const option = document.createElement('option');
+                option.value = department.id;
+                option.textContent = department.name;
+                elements.departmentFilter.appendChild(option);
+            });
+
+            const values = Array.from(elements.departmentFilter.options).map(option => option.value);
+            elements.departmentFilter.value = values.includes(currentValue) ? currentValue : 'all';
+        }
+
+        function renderAll() {
+            const visibleEmployees = getVisibleEmployees();
+            renderDepartmentCards(visibleEmployees);
+            renderPeople(visibleEmployees);
+        }
+
+        function getVisibleEmployees() {
+            const selectedOrgId = elements.orgSelect.value;
+            const selectedDepartmentId = elements.departmentFilter.value;
+            const searchTerm = elements.searchInput.value.trim().toLowerCase();
+
+            return employees.filter(employee => {
+                if (selectedOrgId !== 'all' && employee.organizationId !== selectedOrgId) return false;
+                if (selectedDepartmentId !== 'all' && employee.departmentId !== selectedDepartmentId) return false;
+                if (!searchTerm) return true;
+
+                return [
+                    employee.name,
+                    employee.role,
+                    employee.departmentName,
+                    employee.organizationName,
+                    employee.email,
+                    employee.phone,
+                    formatDate(employee.hireDate)
+                ].some(value => String(value || '').toLowerCase().includes(searchTerm));
+            });
+        }
+
+        function renderDepartmentCards(visibleEmployees) {
+            const selectedOrgId = elements.orgSelect.value;
+            const selectedDepartmentId = elements.departmentFilter.value;
+            const departmentCounts = new Map();
+            const managerScope = employees.filter(employee => {
+                const orgMatches = selectedOrgId === 'all' || employee.organizationId === selectedOrgId;
+                const departmentMatches = selectedDepartmentId === 'all' || employee.departmentId === selectedDepartmentId;
+                return orgMatches && departmentMatches;
+            });
+
+            visibleEmployees.forEach(employee => {
+                const key = employee.departmentId || 'unassigned';
+                departmentCounts.set(key, (departmentCounts.get(key) || 0) + 1);
+            });
+
+            let visibleDepartments = departments.filter(department => {
+                const orgMatches = selectedOrgId === 'all' || department.organizationId === selectedOrgId;
+                const departmentMatches = selectedDepartmentId === 'all' || department.id === selectedDepartmentId;
+                return orgMatches && departmentMatches;
+            });
+
+            if (selectedDepartmentId !== 'all') {
+                visibleDepartments = visibleDepartments.filter(department => department.id === selectedDepartmentId);
+            }
+
+            const hasUnassigned = visibleEmployees.some(employee => !employee.departmentId);
+            elements.departmentCards.innerHTML = '';
+
+            const cards = visibleDepartments.map(department => ({
+                id: department.id,
+                name: department.name,
+                count: departmentCounts.get(department.id) || 0,
+                manager: getDepartmentManager(department, managerScope)
+            }));
+
+            if (hasUnassigned && selectedDepartmentId === 'all') {
+                cards.push({
+                    id: 'unassigned',
+                    name: 'Unassigned',
+                    count: departmentCounts.get('unassigned') || 0,
+                    manager: 'Unassigned'
+                });
+            }
+
+            if (cards.length === 0) {
+                elements.departmentCards.innerHTML = '<div class="empty-state">No departments found.</div>';
+                elements.departmentMeta.textContent = '0 departments';
+                return;
+            }
+
+            cards.forEach(card => {
+                const cardElement = document.createElement('article');
+                cardElement.className = 'department-card';
+                cardElement.innerHTML = `
+                    <div class="department-name">${escapeHtml(card.name)}</div>
+                    <div class="department-stat">
+                        <span>Employees</span>
+                        <strong>${card.count}</strong>
+                    </div>
+                    <div class="department-stat">
+                        <span>Manager</span>
+                        <strong>${escapeHtml(card.manager)}</strong>
+                    </div>
+                `;
+                elements.departmentCards.appendChild(cardElement);
+            });
+
+            const nonEmptyCount = cards.filter(card => card.count > 0).length;
+            elements.departmentMeta.textContent = `${nonEmptyCount} of ${cards.length} departments`;
+        }
+
+        function getDepartmentManager(department, scopedEmployees) {
+            if (department.managerId) {
+                const managerById = employees.find(employee => employee.id === department.managerId);
+                if (managerById) return managerById.name;
+            }
+
+            const managerByRole = scopedEmployees.find(employee => {
+                return employee.departmentId === department.id && employee.role.toLowerCase().includes('manager');
+            });
+
+            return managerByRole?.name || 'Unassigned';
+        }
+
+        function renderPeople(visibleEmployees) {
+            elements.resultCount.textContent = `${visibleEmployees.length} employee${visibleEmployees.length === 1 ? '' : 's'}`;
+            elements.peopleSectionTitle.textContent = selectedView === 'directory' ? 'Employee Directory' : 'Org Chart';
+            elements.employeeGrid.classList.toggle('hidden', selectedView !== 'directory');
+            elements.orgChart.classList.toggle('hidden', selectedView !== 'chart');
+
+            if (selectedView === 'directory') {
+                renderEmployeeGrid(visibleEmployees);
+            } else {
+                renderOrgChart(visibleEmployees);
+            }
+        }
+
+        function renderEmployeeGrid(visibleEmployees) {
+            elements.employeeGrid.innerHTML = '';
+
+            if (visibleEmployees.length === 0) {
+                elements.employeeGrid.innerHTML = '<div class="empty-state">No employees found.</div>';
+                return;
+            }
+
+            visibleEmployees.forEach(employee => {
+                const card = document.createElement('article');
+                card.className = 'employee-card';
+                card.tabIndex = 0;
+                card.dataset.employeeId = employee.id;
+                card.innerHTML = `
+                    <div class="employee-card-header">
+                        <div>
+                            <div class="employee-name">${escapeHtml(employee.name)}</div>
+                            <div class="employee-role">${escapeHtml(formatRole(employee.role))}</div>
+                        </div>
+                        ${isAdmin() ? `<button class="btn-card-edit" type="button" data-action="edit" data-employee-id="${escapeHtml(employee.id)}">Edit</button>` : ''}
+                    </div>
+                    <div class="employee-fields">
+                        <div class="employee-field">
+                            <span>Dept</span>
+                            <span>${escapeHtml(employee.departmentName)}</span>
+                        </div>
+                        <div class="employee-field">
+                            <span>Email</span>
+                            <span>${escapeHtml(employee.email || 'Not set')}</span>
+                        </div>
+                        <div class="employee-field">
+                            <span>Phone</span>
+                            <span>${escapeHtml(employee.phone || 'Not set')}</span>
+                        </div>
+                        <div class="employee-field">
+                            <span>Hired</span>
+                            <span>${escapeHtml(formatDate(employee.hireDate))}</span>
+                        </div>
+                    </div>
+                `;
+                elements.employeeGrid.appendChild(card);
+            });
+        }
+
+        function renderOrgChart(visibleEmployees) {
+            elements.orgChart.innerHTML = '';
+
+            if (visibleEmployees.length === 0) {
+                elements.orgChart.innerHTML = '<div class="empty-state">No employees found.</div>';
+                return;
+            }
+
+            const orgGroups = groupBy(visibleEmployees, employee => employee.organizationId || 'unknown');
+
+            orgGroups.forEach((orgEmployees, orgId) => {
+                const org = organizations.find(item => item.id === orgId);
+                const orgName = org?.name || orgEmployees[0]?.organizationName || 'Unknown Organization';
+                const root = document.createElement('div');
+                root.className = 'tree-root';
+                root.innerHTML = `
+                    <div class="tree-card">
+                        <div class="tree-title">${escapeHtml(orgName)}</div>
+                        <div class="tree-meta">${orgEmployees.length} employee${orgEmployees.length === 1 ? '' : 's'}</div>
+                    </div>
+                `;
+
+                const children = document.createElement('div');
+                children.className = 'tree-children';
+
+                const departmentGroups = groupBy(orgEmployees, employee => employee.departmentId || 'unassigned');
+                departmentGroups.forEach((departmentEmployees, departmentId) => {
+                    const department = departments.find(item => item.id === departmentId);
+                    const departmentName = department?.name || departmentEmployees[0]?.departmentName || 'Unassigned';
+                    const branch = document.createElement('div');
+                    branch.className = 'tree-branch';
+                    branch.innerHTML = `
+                        <div class="tree-card">
+                            <div class="tree-title">${escapeHtml(departmentName)}</div>
+                            <div class="tree-meta">Manager: ${escapeHtml(department ? getDepartmentManager(department, employees) : 'Unassigned')} | ${departmentEmployees.length} employee${departmentEmployees.length === 1 ? '' : 's'}</div>
+                        </div>
+                    `;
+
+                    const list = document.createElement('div');
+                    list.className = 'employee-tree-list';
+                    sortEmployees(departmentEmployees).forEach(employee => {
+                        const employeeCard = document.createElement('div');
+                        employeeCard.className = 'tree-card employee-tree-card';
+                        employeeCard.tabIndex = 0;
+                        employeeCard.dataset.employeeId = employee.id;
+                        employeeCard.innerHTML = `
+                            <div class="tree-title">${escapeHtml(employee.name)}</div>
+                            <div class="tree-meta">${escapeHtml(formatRole(employee.role))}</div>
+                        `;
+                        list.appendChild(employeeCard);
+                    });
+
+                    const branchChildren = document.createElement('div');
+                    branchChildren.className = 'tree-children';
+                    branchChildren.appendChild(list);
+                    branch.appendChild(branchChildren);
+                    children.appendChild(branch);
+                });
+
+                root.appendChild(children);
+                elements.orgChart.appendChild(root);
+            });
+        }
+
+        function openDetailModal(employeeId) {
+            const employee = employees.find(item => item.id === employeeId);
+            if (!employee) return;
+            selectedEmployee = employee;
+
+            elements.modalTitle.textContent = employee.name;
+            elements.modalSubtitle.textContent = `${formatRole(employee.role)} | ${employee.departmentName}`;
+            elements.modalBody.innerHTML = `
+                <div class="detail-grid">
+                    ${renderDetailItem('Organization', employee.organizationName)}
+                    ${renderDetailItem('Department', employee.departmentName)}
+                    ${renderDetailItem('Role', formatRole(employee.role))}
+                    ${renderDetailItem('Email', employee.email || 'Not set')}
+                    ${renderDetailItem('Phone', employee.phone || 'Not set')}
+                    ${renderDetailItem('Hire Date', formatDate(employee.hireDate))}
+                    ${renderDetailItem('Status', employee.isActive ? 'Active' : 'Inactive')}
+                </div>
+            `;
+            elements.modalActions.innerHTML = `
+                <button class="btn-secondary" type="button" data-modal-action="close">Close</button>
+                ${isAdmin() ? '<button class="btn-primary" type="button" data-modal-action="edit">Edit</button>' : ''}
+            `;
+            showModal();
+        }
+
+        function openEditModal(employeeId) {
+            if (!isAdmin()) return;
+
+            const employee = employeeId ? employees.find(item => item.id === employeeId) : null;
+            selectedEmployee = employee || null;
+            const isEditing = Boolean(employee);
+
+            elements.modalTitle.textContent = isEditing ? `Edit ${employee.name}` : 'Add Employee';
+            elements.modalSubtitle.textContent = isEditing ? employee.email || employee.departmentName : 'User profile';
+            elements.modalBody.innerHTML = renderEmployeeForm(employee);
+            elements.modalActions.innerHTML = `
+                <button class="btn-secondary" type="button" data-modal-action="close">Cancel</button>
+                <button class="btn-primary" type="submit" form="employeeForm" id="saveEmployeeBtn">Save</button>
+            `;
+
+            document.getElementById('employeeForm').addEventListener('submit', saveEmployee);
+            showModal();
+        }
+
+        function renderEmployeeForm(employee) {
+            const selectedOrgId = employee?.organizationId || (elements.orgSelect.value !== 'all' ? elements.orgSelect.value : '');
+            const departmentOptions = departments.map(department => {
+                const org = organizations.find(item => item.id === department.organizationId);
+                const label = org ? `${department.name} (${org.name})` : department.name;
+                return `<option value="${escapeHtml(department.id)}" ${employee?.departmentId === department.id ? 'selected' : ''}>${escapeHtml(label)}</option>`;
+            }).join('');
+            const organizationOptions = organizations.map(org => {
+                return `<option value="${escapeHtml(org.id)}" ${selectedOrgId === org.id ? 'selected' : ''}>${escapeHtml(org.name)}</option>`;
+            }).join('');
+
+            return `
+                <form class="employee-form" id="employeeForm">
+                    <input type="hidden" id="employeeId" value="${escapeHtml(employee?.id || '')}">
+                    <div class="field">
+                        <label for="fullName">Name</label>
+                        <input id="fullName" type="text" value="${escapeHtml(employee?.name || '')}" required>
+                    </div>
+                    <div class="field">
+                        <label for="employeeRole">Role</label>
+                        <input id="employeeRole" type="text" value="${escapeHtml(employee?.role || '')}" required>
+                    </div>
+                    <div class="field">
+                        <label for="employeeOrg">Organization</label>
+                        <select id="employeeOrg">
+                            <option value="">Unassigned</option>
+                            ${organizationOptions}
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="employeeDept">Department</label>
+                        <select id="employeeDept">
+                            <option value="">Unassigned</option>
+                            ${departmentOptions}
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="employeeEmail">Email</label>
+                        <input id="employeeEmail" type="email" value="${escapeHtml(employee?.email || '')}">
+                    </div>
+                    <div class="field">
+                        <label for="employeePhone">Phone</label>
+                        <input id="employeePhone" type="tel" value="${escapeHtml(employee?.phone || '')}">
+                    </div>
+                    <div class="field">
+                        <label for="employeeHireDate">Hire Date</label>
+                        <input id="employeeHireDate" type="date" value="${escapeHtml(formatDateInput(employee?.hireDate))}">
+                    </div>
+                    <label class="checkbox-row" for="employeeActive">
+                        <input id="employeeActive" type="checkbox" ${employee?.isActive === false ? '' : 'checked'}>
+                        Active
+                    </label>
+                </form>
+            `;
+        }
+
+        async function saveEmployee(event) {
+            event.preventDefault();
+
+            const saveButton = document.getElementById('saveEmployeeBtn');
+            if (saveButton) {
+                saveButton.disabled = true;
+                saveButton.textContent = 'Saving...';
+            }
+
+            const employeeId = document.getElementById('employeeId').value;
+            const departmentId = document.getElementById('employeeDept').value || null;
+            const department = departments.find(item => item.id === departmentId);
+            const organizationId = document.getElementById('employeeOrg').value || department?.organizationId || null;
+            const payload = {
+                full_name: document.getElementById('fullName').value.trim(),
+                role: document.getElementById('employeeRole').value.trim(),
+                organization_id: organizationId,
+                department_id: departmentId,
+                email: document.getElementById('employeeEmail').value.trim() || null,
+                phone: document.getElementById('employeePhone').value.trim() || null,
+                hire_date: document.getElementById('employeeHireDate').value || null,
+                is_active: document.getElementById('employeeActive').checked
+            };
+
+            try {
+                const result = employeeId
+                    ? await supabaseClient.from('user_profiles').update(payload).eq('id', employeeId).select().maybeSingle()
+                    : await supabaseClient.from('user_profiles').insert(payload).select().maybeSingle();
+
+                if (result.error) throw result.error;
+
+                closeModal();
+                showStatus('Employee saved.', 'success');
+                await loadTeamData();
+            } catch (error) {
+                console.error('Error saving employee:', error);
+                showStatus(error.message || 'Error saving employee.', 'error');
+                if (saveButton) {
+                    saveButton.disabled = false;
+                    saveButton.textContent = 'Save';
+                }
+            }
+        }
+
+        function renderDetailItem(label, value) {
+            return `
+                <div class="detail-item">
+                    <div class="detail-label">${escapeHtml(label)}</div>
+                    <div class="detail-value">${escapeHtml(value || 'Not set')}</div>
+                </div>
+            `;
+        }
+
+        function showModal() {
+            elements.employeeModal.classList.add('show');
+            elements.employeeModal.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeModal() {
+            selectedEmployee = null;
+            elements.employeeModal.classList.remove('show');
+            elements.employeeModal.setAttribute('aria-hidden', 'true');
+            elements.modalBody.innerHTML = '';
+            elements.modalActions.innerHTML = '';
+        }
+
+        function setLoadingState() {
+            elements.departmentCards.innerHTML = '<div class="loading">Loading departments...</div>';
+            elements.employeeGrid.innerHTML = '<div class="loading">Loading employees...</div>';
+            elements.orgChart.innerHTML = '';
+            elements.resultCount.textContent = 'Loading...';
+            elements.departmentMeta.textContent = 'Loading...';
+        }
+
+        function showStatus(message, type) {
+            elements.statusMessage.textContent = message;
+            elements.statusMessage.className = `status-message show ${type || ''}`;
+
+            if (type === 'success') {
+                window.setTimeout(() => {
+                    elements.statusMessage.className = 'status-message';
+                    elements.statusMessage.textContent = '';
+                }, 3500);
+            }
+        }
+
+        function sortEmployees(items) {
+            return [...items].sort((a, b) => {
+                const roleRankA = a.role.toLowerCase().includes('manager') ? 0 : 1;
+                const roleRankB = b.role.toLowerCase().includes('manager') ? 0 : 1;
+                if (roleRankA !== roleRankB) return roleRankA - roleRankB;
+                return a.name.localeCompare(b.name);
+            });
+        }
+
+        function groupBy(items, getKey) {
+            const groups = new Map();
+            items.forEach(item => {
+                const key = getKey(item);
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key).push(item);
+            });
+            return groups;
+        }
+
+        function unwrapRelation(value) {
+            if (Array.isArray(value)) return value[0] || null;
+            return value || null;
+        }
+
+        function normalizeId(value) {
+            return value === null || value === undefined ? '' : String(value);
+        }
+
+        function formatRole(role) {
+            return String(role || 'employee')
+                .replace(/_/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .replace(/\b\w/g, char => char.toUpperCase());
+        }
+
+        function formatDate(value) {
+            if (!value) return 'Not set';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return value;
+            return date.toLocaleDateString();
+        }
+
+        function formatDateInput(value) {
+            if (!value) return '';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '';
+            return date.toISOString().slice(0, 10);
+        }
+
+        function escapeHtml(value) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(value ?? '').replace(/[&<>"']/g, char => map[char]);
+        }
+
+        function isAdmin() {
+            return (userRole || localStorage.getItem('user_role') || '').toLowerCase() === 'admin';
+        }
+
+        elements.logoutBtn.addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+            localStorage.clear();
+            window.location.href = 'login.html';
+        });
+
+        elements.orgSelect.addEventListener('change', () => {
+            populateDepartmentFilter();
+            renderAll();
+        });
+
+        elements.departmentFilter.addEventListener('change', renderAll);
+        elements.searchInput.addEventListener('input', renderAll);
+
+        document.querySelectorAll('.btn-view').forEach(button => {
+            button.addEventListener('click', () => {
+                selectedView = button.dataset.view;
+                document.querySelectorAll('.btn-view').forEach(item => {
+                    item.classList.toggle('active', item.dataset.view === selectedView);
+                });
+                renderAll();
+            });
+        });
+
+        elements.employeeGrid.addEventListener('click', event => {
+            const editButton = event.target.closest('[data-action="edit"]');
+            if (editButton) {
+                event.stopPropagation();
+                openEditModal(editButton.dataset.employeeId);
+                return;
+            }
+
+            const card = event.target.closest('.employee-card');
+            if (card) openDetailModal(card.dataset.employeeId);
+        });
+
+        elements.employeeGrid.addEventListener('keydown', event => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            if (event.target.closest('[data-action="edit"]')) return;
+            const card = event.target.closest('.employee-card');
+            if (!card) return;
+            event.preventDefault();
+            openDetailModal(card.dataset.employeeId);
+        });
+
+        elements.orgChart.addEventListener('click', event => {
+            const card = event.target.closest('.employee-tree-card');
+            if (card) openDetailModal(card.dataset.employeeId);
+        });
+
+        elements.orgChart.addEventListener('keydown', event => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            const card = event.target.closest('.employee-tree-card');
+            if (!card) return;
+            event.preventDefault();
+            openDetailModal(card.dataset.employeeId);
+        });
+
+        elements.addEmployeeBtn.addEventListener('click', () => openEditModal(null));
+
+        elements.modalCloseBtn.addEventListener('click', closeModal);
+
+        elements.employeeModal.addEventListener('click', event => {
+            if (event.target === elements.employeeModal) closeModal();
+        });
+
+        elements.modalActions.addEventListener('click', event => {
+            const action = event.target.dataset.modalAction;
+            if (action === 'close') closeModal();
+            if (action === 'edit' && selectedEmployee) openEditModal(selectedEmployee.id);
+        });
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && elements.employeeModal.classList.contains('show')) {
+                closeModal();
+            }
+        });
+
+        (async function init() {
+            await loadUserInfo();
+            if (currentUser) {
+                await loadTeamData();
+            }
+        })();
+    </script>
+</body>
+</html>
