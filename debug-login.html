@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Debug Tool</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #00ff00;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #00ff00;
+            padding-bottom: 0.5rem;
+        }
+        .status {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+        }
+        .status.error {
+            border-color: #ff0000;
+            color: #ff6666;
+        }
+        .status.success {
+            border-color: #00ff00;
+            color: #00ff00;
+        }
+        .status.warning {
+            border-color: #ffaa00;
+            color: #ffcc66;
+        }
+        input {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #00ff00;
+            padding: 0.75rem;
+            width: 100%;
+            margin-bottom: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        button {
+            background: #1a1a1a;
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            padding: 0.75rem 2rem;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-right: 1rem;
+            margin-bottom: 1rem;
+        }
+        button:hover {
+            background: #00ff00;
+            color: #0a0a0a;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        pre {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 1rem;
+            overflow-x: auto;
+            margin-bottom: 1rem;
+            font-size: 12px;
+        }
+        .label {
+            color: #00ff00;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        #debugOutput {
+            min-height: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Employee Portal Login Diagnostic</h1>
+        
+        <div id="sdkCheck" class="status">
+            <strong>SDK Status:</strong> Checking...
+        </div>
+
+        <div id="configCheck" class="status">
+            <strong>Config Status:</strong> Checking...
+        </div>
+
+        <div class="status">
+            <label class="label">Email:</label>
+            <input type="email" id="email" value="zmonroe@heinepropane.com" placeholder="Email">
+            
+            <label class="label">Password:</label>
+            <input type="password" id="password" placeholder="Password">
+            
+            <button id="testLogin">🔐 Test Login</button>
+            <button id="checkUser">👤 Check User Exists</button>
+            <button id="listUsers">📋 List All Auth Users</button>
+            <button id="checkProfile">🗂️ Check user_profiles Table</button>
+        </div>
+
+        <div class="status">
+            <label class="label">Debug Output:</label>
+            <pre id="debugOutput">Waiting for test...</pre>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://ftzpjtvyrnnjjcvrtsab.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0enBqdHZ5cm5uampjdnJ0c2FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NjIxNjYsImV4cCI6MjA5MTIzODE2Nn0.2mzFoPtaT2grtUJ46KjU0dQbA1Yp0kyRiv-HP6KJm-g';
+        
+        let supabase;
+        
+        function log(message, data = null) {
+            const output = document.getElementById('debugOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            let text = `[${timestamp}] ${message}\n`;
+            if (data) {
+                text += JSON.stringify(data, null, 2) + '\n';
+            }
+            output.textContent += text + '\n';
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function updateStatus(id, message, type = 'success') {
+            const el = document.getElementById(id);
+            el.textContent = message;
+            el.className = `status ${type}`;
+        }
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            // Check SDK
+            if (typeof window.supabase === 'undefined') {
+                updateStatus('sdkCheck', '❌ SDK Status: NOT LOADED', 'error');
+                log('ERROR: Supabase SDK not loaded');
+                return;
+            }
+            updateStatus('sdkCheck', '✅ SDK Status: Loaded', 'success');
+            log('✓ Supabase SDK loaded successfully');
+
+            // Create client
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                updateStatus('configCheck', '✅ Config Status: Client initialized', 'success');
+                log('✓ Supabase client created');
+                log('  URL: ' + SUPABASE_URL);
+                log('  Key length: ' + SUPABASE_ANON_KEY.length + ' chars');
+            } catch (err) {
+                updateStatus('configCheck', '❌ Config Status: Failed to initialize', 'error');
+                log('ERROR: Failed to create client', err);
+            }
+
+            // Attach handlers
+            document.getElementById('testLogin').addEventListener('click', testLogin);
+            document.getElementById('checkUser').addEventListener('click', checkUserExists);
+            document.getElementById('listUsers').addEventListener('click', listUsers);
+            document.getElementById('checkProfile').addEventListener('click', checkProfile);
+        });
+
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                log('❌ ERROR: Email and password required');
+                return;
+            }
+
+            log('🔐 TESTING LOGIN...');
+            log('  Email: ' + email);
+            log('  Password: ' + '*'.repeat(password.length));
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    log('❌ LOGIN FAILED', {
+                        message: error.message,
+                        status: error.status,
+                        name: error.name,
+                        code: error.code
+                    });
+                } else {
+                    log('✅ LOGIN SUCCESS!', {
+                        user_id: data.user.id,
+                        email: data.user.email,
+                        confirmed_at: data.user.confirmed_at,
+                        created_at: data.user.created_at,
+                        role: data.user.role
+                    });
+                }
+            } catch (err) {
+                log('❌ EXCEPTION during login', err);
+            }
+        }
+
+        async function checkUserExists() {
+            const email = document.getElementById('email').value;
+            if (!email) {
+                log('❌ ERROR: Email required');
+                return;
+            }
+
+            log('👤 CHECKING IF USER EXISTS...');
+            log('  Email: ' + email);
+
+            try {
+                // Try to trigger password reset to see if user exists
+                const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: 'http://localhost:8000/reset'
+                });
+
+                if (error) {
+                    log('⚠️ Result (may indicate user does NOT exist)', {
+                        message: error.message,
+                        status: error.status
+                    });
+                } else {
+                    log('✅ Password reset email sent (user EXISTS)', data);
+                }
+            } catch (err) {
+                log('❌ EXCEPTION', err);
+            }
+        }
+
+        async function listUsers() {
+            log('📋 ATTEMPTING TO LIST USERS...');
+            log('⚠️ NOTE: This requires service_role key, will fail with anon key');
+
+            try {
+                const { data, error } = await supabase.auth.admin.listUsers();
+                
+                if (error) {
+                    log('❌ Expected failure (anon key cannot list users)', {
+                        message: error.message,
+                        status: error.status
+                    });
+                    log('ℹ️ This is normal - user listing requires admin access');
+                } else {
+                    log('✅ Users found', data);
+                }
+            } catch (err) {
+                log('❌ EXCEPTION', err);
+            }
+        }
+
+        async function checkProfile() {
+            const email = document.getElementById('email').value;
+            if (!email) {
+                log('❌ ERROR: Email required');
+                return;
+            }
+
+            log('🗂️ CHECKING user_profiles TABLE...');
+
+            try {
+                const { data, error } = await supabase
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('email', email);
+
+                if (error) {
+                    log('❌ ERROR querying user_profiles', {
+                        message: error.message,
+                        code: error.code,
+                        details: error.details,
+                        hint: error.hint
+                    });
+                } else if (data.length === 0) {
+                    log('⚠️ NO PROFILE FOUND for ' + email);
+                    log('ℹ️ User may exist in auth.users but not in user_profiles table');
+                } else {
+                    log('✅ PROFILE FOUND', data);
+                }
+            } catch (err) {
+                log('❌ EXCEPTION', err);
+            }
+        }
+    </script>
+</body>
+</html>

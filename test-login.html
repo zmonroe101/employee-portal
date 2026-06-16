@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Test - Error Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1A1A1A;
+            color: #E0E0E0;
+        }
+        .test-section {
+            background: #2A2A2A;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .error-message {
+            background: rgba(230, 10, 0, 0.15);
+            border-left: 3px solid #E60A00;
+            padding: 0.875rem;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-size: 0.9rem;
+            display: none;
+        }
+        .error-message.show {
+            display: block;
+        }
+        button {
+            background: #E60A00;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #C00900;
+        }
+        .info {
+            background: #3A3A3A;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Login Page Test</h1>
+
+    <div class="test-section">
+        <h2>Test 1: Error Display Mechanism</h2>
+        <div id="test1Error" class="error-message"></div>
+        <button onclick="showTestError('test1Error', 'This is a test error message')">Show Error</button>
+        <button onclick="hideTestError('test1Error')">Hide Error</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Supabase SDK Loading</h2>
+        <div id="sdkStatus" class="info">Checking...</div>
+        <div id="test2Error" class="error-message"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Supabase Client Initialization</h2>
+        <div id="clientStatus" class="info">Checking...</div>
+        <div id="test3Error" class="error-message"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 4: Form Submission Prevention</h2>
+        <form id="testForm" onsubmit="return false;">
+            <input type="email" placeholder="test@example.com" required>
+            <button type="submit">Test Submit (Should not reload)</button>
+        </form>
+        <div id="test4Status" class="info">Submit the form above - page should NOT reload</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Test error display functions
+        function showTestError(elementId, message) {
+            const errorEl = document.getElementById(elementId);
+            errorEl.textContent = message;
+            errorEl.classList.add('show');
+            console.log('Showing error on', elementId, ':', message);
+        }
+
+        function hideTestError(elementId) {
+            const errorEl = document.getElementById(elementId);
+            errorEl.classList.remove('show');
+            errorEl.textContent = '';
+            console.log('Hiding error on', elementId);
+        }
+
+        // Test 2: Check Supabase SDK
+        setTimeout(() => {
+            const sdkStatus = document.getElementById('sdkStatus');
+            if (typeof window.supabase !== 'undefined') {
+                sdkStatus.innerHTML = '✅ Supabase SDK loaded successfully<br>Version: ' + (window.supabase.version || 'Unknown');
+                sdkStatus.style.background = '#2d5f2d';
+            } else {
+                sdkStatus.innerHTML = '❌ Supabase SDK NOT loaded';
+                sdkStatus.style.background = '#5f2d2d';
+                showTestError('test2Error', 'Failed to load Supabase SDK');
+            }
+        }, 1000);
+
+        // Test 3: Check client initialization
+        setTimeout(() => {
+            const clientStatus = document.getElementById('clientStatus');
+            const SUPABASE_URL = 'https://ftzpjtvyrnnjjcvrtsab.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0enBqdHZ5cnJuampjdnJ0c2FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NjIxNjYsImV4cCI6MjA5MTIzODE2Nn0.2mzFoPtaT2grtUJ46KjU0dQbA1Yp0kyRiv-HP6KJm-g';
+            
+            try {
+                if (!window.supabase) {
+                    throw new Error('Supabase SDK not loaded');
+                }
+                
+                const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                if (client && typeof client.auth !== 'undefined') {
+                    clientStatus.innerHTML = '✅ Supabase client initialized successfully<br>Auth methods available: ' + 
+                        Object.keys(client.auth).filter(k => typeof client.auth[k] === 'function').join(', ');
+                    clientStatus.style.background = '#2d5f2d';
+                    
+                    // Test actual connection
+                    client.auth.getSession().then(({ data, error }) => {
+                        if (error) {
+                            clientStatus.innerHTML += '<br>⚠️ Session check error: ' + error.message;
+                        } else {
+                            clientStatus.innerHTML += '<br>✅ Connection to Supabase successful';
+                        }
+                    });
+                } else {
+                    throw new Error('Client initialized but auth object missing');
+                }
+            } catch (error) {
+                clientStatus.innerHTML = '❌ Failed to initialize client: ' + error.message;
+                clientStatus.style.background = '#5f2d2d';
+                showTestError('test3Error', error.message);
+            }
+        }, 1500);
+
+        // Test 4: Form submission
+        document.getElementById('testForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const status = document.getElementById('test4Status');
+            status.innerHTML = '✅ Form submitted but page did NOT reload (preventDefault worked)';
+            status.style.background = '#2d5f2d';
+            console.log('Form submit prevented successfully');
+        });
+
+        console.log('Test page loaded. Check the tests above.');
+    </script>
+</body>
+</html>
